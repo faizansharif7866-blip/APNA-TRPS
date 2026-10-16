@@ -1,0 +1,6 @@
+{
+  "name": "ApnaTrips — Complete Travel Booking Platform",
+  "description": "Secure, scalable Indian travel booking platform for Bus, Train, Resort, Taxi, Auto & Bike rentals with live GPS tracking, partner portals, and Razorpay payments.",
+  "requestFramePermissions": ["geolocation"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
