@@ -6,7 +6,6 @@ import {
   Star, 
   Wifi, 
   Zap, 
-  Coffee, 
   Shield, 
   Navigation, 
   Check, 
@@ -14,17 +13,27 @@ import {
   Timer,
   ChevronDown,
   ChevronUp,
-  Filter
+  ChevronRight,
+  Filter,
+  Mic,
+  Sparkles,
+  ArrowRight,
+  SlidersHorizontal,
+  ThumbsUp,
+  Heart,
+  Percent
 } from 'lucide-react';
 import { BusTrip, Seat } from '../types';
 import { LanguageCode, translations } from '../services/localization';
 import { generateBusSeats } from '../data/mockData';
+import { RedBusSeatDetailsModal } from './RedBusSeatDetailsModal';
 
 export interface BusSearchParams {
   source: string;
   destination: string;
   date: string;
   passengers: number;
+  womenOnly?: boolean;
 }
 
 interface BusBookingViewProps {
@@ -51,103 +60,134 @@ export const BusBookingView: React.FC<BusBookingViewProps> = ({
   onOpenGpsModal,
   onInitiateCheckout,
 }) => {
-  const t = translations[lang];
+  const [filterType, setFilterType] = useState<string>('all');
+  const [aiFilterQuery, setAiFilterQuery] = useState('');
+  const [selectedTripForModal, setSelectedTripForModal] = useState<BusTrip | null>(null);
+  const [selectedSeats, setSelectedSeats] = useState<Seat[]>([]);
+  const [activeCategoryTab, setActiveCategoryTab] = useState<'buses' | 'hotels'>('buses');
 
-  // Helper to generate dynamic trip if custom route searched
+  // Dynamic trip generator for custom routes
   const generateDynamicTripsForRoute = (source: string, dest: string, date: string): BusTrip[] => {
     return [
       {
-        id: `dyn-${source}-${dest}-1`,
+        id: `humsafar-1`,
         supplierId: 'sup-001',
-        operatorName: 'Zingbus Luxury Premium Lounge',
+        operatorName: 'Humsafar Travels',
+        busNumber: 'MH-12-RN-7711',
+        busType: 'Bharat Benz A/C Sleeper (2+1)',
+        sourceCity: source,
+        destinationCity: dest,
+        departureTime: '23:00',
+        arrivalTime: '06:00',
+        duration: '7h 00m',
+        rating: 4.6,
+        reviewCount: 867,
+        totalSeats: 30,
+        availableSeatsCount: 11,
+        fareStartingFrom: 1150,
+        amenities: ['Live GPS Tracking', 'Toilet', 'Personal AC Vents', 'Charging Point', 'Blanket & Pillow', 'Reading Light'],
+        boardingPoints: [
+          { location: `${source} Swargate Private Bus Stand`, time: '23:00' },
+          { location: `${source} Viman Nagar Bypass`, time: '23:45' },
+        ],
+        droppingPoints: [
+          { location: `${dest} CIDCO Bus Stand`, time: '05:30' },
+          { location: `${dest} Central Railway Station`, time: '06:00' },
+        ],
+        cancellationPolicy: 'Free cancellation up to 6 hours before departure.',
+        hasLiveGps: true,
+        gpsTripId: 'gps-trip-001',
+        seats: generateBusSeats(1150),
+      },
+      {
+        id: `vbus-2`,
+        supplierId: 'sup-002',
+        operatorName: 'V Bus Holidays Royal',
+        busNumber: 'MH-20-EQ-5522',
+        busType: 'Scania Metrolink Multi-Axle AC Sleeper',
+        sourceCity: source,
+        destinationCity: dest,
+        departureTime: '22:00',
+        arrivalTime: '05:00',
+        duration: '7h 00m',
+        rating: 4.9,
+        reviewCount: 1374,
+        totalSeats: 30,
+        availableSeatsCount: 7,
+        fareStartingFrom: 1180,
+        amenities: ['Live GPS Tracking', 'Toilet', 'WiFi Hotspot', 'Snack Pack', 'Emergency SOS', 'Comfort Sleep Berths'],
+        boardingPoints: [
+          { location: `${source} Wakad Highway Toll`, time: '22:00' },
+          { location: `${source} Shivaji Nagar`, time: '22:45' },
+        ],
+        droppingPoints: [
+          { location: `${dest} Kranti Chowk`, time: '04:30' },
+          { location: `${dest} Central Terminus`, time: '05:00' },
+        ],
+        cancellationPolicy: 'Full refund up to 7 hours before journey.',
+        hasLiveGps: true,
+        gpsTripId: 'gps-trip-002',
+        seats: generateBusSeats(1180),
+      },
+      {
+        id: `zingbus-3`,
+        supplierId: 'sup-003',
+        operatorName: 'Zingbus Luxury Primo Lounge',
         busNumber: 'DL-01-EQ-9876',
         busType: 'Volvo 9600 Multi-Axle AC Sleeper (2+1)',
         sourceCity: source,
         destinationCity: dest,
-        departureTime: '20:30',
-        arrivalTime: '07:15',
-        duration: '10h 45m',
+        departureTime: '21:30',
+        arrivalTime: '05:15',
+        duration: '7h 45m',
         rating: 4.8,
-        reviewCount: 1820,
-        totalSeats: 30,
-        availableSeatsCount: 22,
-        fareStartingFrom: 1350,
-        amenities: ['Live GPS Tracking', 'Personal AC Vents', 'Reading Lights', 'USB Fast Charger', 'Blanket & Pillow', 'Mineral Water'],
-        boardingPoints: [
-          { location: `${source} Central Inter-State Bus Terminal`, time: '20:30' },
-          { location: `${source} Highway Express Toll Plaza`, time: '21:15' },
-        ],
-        droppingPoints: [
-          { location: `${dest} Main City Junction`, time: '06:45' },
-          { location: `${dest} Central Bus Stand`, time: '07:15' },
-        ],
-        cancellationPolicy: 'Free cancellation up to 6 hours before departure. 50% refund between 2 to 6 hours.',
-        hasLiveGps: true,
-        gpsTripId: 'gps-trip-001',
-        seats: generateBusSeats(1350),
-      },
-      {
-        id: `dyn-${source}-${dest}-2`,
-        supplierId: 'sup-002',
-        operatorName: 'Parveen Travels Royal Class',
-        busNumber: 'MH-04-AZ-4521',
-        busType: 'Scania Metrolink Multi-Axle AC Sleeper',
-        sourceCity: source,
-        destinationCity: dest,
-        departureTime: '21:45',
-        arrivalTime: '08:30',
-        duration: '10h 45m',
-        rating: 4.9,
-        reviewCount: 2450,
+        reviewCount: 2120,
         totalSeats: 30,
         availableSeatsCount: 16,
-        fareStartingFrom: 1480,
-        amenities: ['Live GPS Tracking', 'WiFi Hotspot', 'Snack Pack', 'Emergency SOS', 'Comfort Sleep Berths', 'Movie Screen'],
+        fareStartingFrom: 1250,
+        amenities: ['Primo Lounge Access', 'Toilet', 'Live GPS Tracking', 'Clean Restroom Guarantee', 'CCTV Surveillance'],
         boardingPoints: [
-          { location: `${source} Ring Road Boarding Point`, time: '21:45' },
-          { location: `${source} Airport Bypass Circle`, time: '22:30' },
+          { location: `${source} Zingbus Express Lounge`, time: '21:30' },
         ],
         droppingPoints: [
-          { location: `${dest} Bypass Dropoff Point`, time: '08:00' },
-          { location: `${dest} Private Bus Stand`, time: '08:30' },
+          { location: `${dest} City Bypass Dropoff`, time: '05:15' },
         ],
-        cancellationPolicy: 'Full refund up to 12 hours before journey. Nominal 10% fee thereafter.',
-        hasLiveGps: true,
-        gpsTripId: 'gps-trip-002',
-        seats: generateBusSeats(1480),
-      },
-      {
-        id: `dyn-${source}-${dest}-3`,
-        supplierId: 'sup-003',
-        operatorName: 'IntrCity SmartBus Executive',
-        busNumber: 'KA-01-MJ-8833',
-        busType: 'BharatBenz Club Class AC Sleeper',
-        sourceCity: source,
-        destinationCity: dest,
-        departureTime: '23:00',
-        arrivalTime: '09:45',
-        duration: '10h 45m',
-        rating: 4.7,
-        reviewCount: 1120,
-        totalSeats: 30,
-        availableSeatsCount: 26,
-        fareStartingFrom: 1190,
-        amenities: ['SmartBus Lounge Access', 'Live GPS Tracking', 'Clean Restroom Guarantee', 'CCTV Surveillance'],
-        boardingPoints: [
-          { location: `${source} SmartBus Exclusive Lounge`, time: '23:00' },
-        ],
-        droppingPoints: [
-          { location: `${dest} Central Terminus`, time: '09:45' },
-        ],
-        cancellationPolicy: '100% refund if cancelled 4 hours prior. Free reschedule.',
+        cancellationPolicy: '100% refund if cancelled 6 hours prior.',
         hasLiveGps: true,
         gpsTripId: 'gps-trip-003',
-        seats: generateBusSeats(1190),
+        seats: generateBusSeats(1250),
+      },
+      {
+        id: `humsafar-4`,
+        supplierId: 'sup-001',
+        operatorName: 'Humsafar Travels Superfast',
+        busNumber: 'MH-14-BT-9900',
+        busType: 'Bharat Benz A/C Sleeper (2+1)',
+        sourceCity: source,
+        destinationCity: dest,
+        departureTime: '23:30',
+        arrivalTime: '06:45',
+        duration: '7h 15m',
+        rating: 4.6,
+        reviewCount: 694,
+        totalSeats: 30,
+        availableSeatsCount: 14,
+        fareStartingFrom: 1120,
+        amenities: ['Live GPS Tracking', 'AC Vents', 'Charging Point', 'Blanket & Pillow'],
+        boardingPoints: [
+          { location: `${source} Swargate Station`, time: '23:30' },
+        ],
+        droppingPoints: [
+          { location: `${dest} CIDCO Terminal`, time: '06:45' },
+        ],
+        cancellationPolicy: 'Free cancellation up to 6 hours before departure.',
+        hasLiveGps: true,
+        gpsTripId: 'gps-trip-001',
+        seats: generateBusSeats(1120),
       },
     ];
   };
 
-  // Determine base trips matching source & destination
   const activeTripsList = React.useMemo(() => {
     if (!searchParams || !searchParams.source || !searchParams.destination) {
       return trips;
@@ -164,473 +204,361 @@ export const BusBookingView: React.FC<BusBookingViewProps> = ({
       return matched;
     }
 
-    // If custom route requested, synthesize live express fleets for that route!
     return generateDynamicTripsForRoute(searchParams.source.trim(), searchParams.destination.trim(), searchParams.date);
   }, [trips, searchParams]);
 
-  const [expandedTripId, setExpandedTripId] = useState<string | null>(null);
-  const [selectedSeatIds, setSelectedSeatIds] = useState<string[]>([]);
-  const [selectedBoardingPoint, setSelectedBoardingPoint] = useState<string>('');
-  const [selectedDroppingPoint, setSelectedDroppingPoint] = useState<string>('');
-  const [filterType, setFilterType] = useState<string>('all');
-  const [filterOperator, setFilterOperator] = useState<string>('all');
-
-  // Update default expanded trip when search changes
-  useEffect(() => {
-    if (activeTripsList.length > 0) {
-      setExpandedTripId(activeTripsList[0].id);
-    } else {
-      setExpandedTripId(null);
-    }
-  }, [activeTripsList]);
-
-  const activeTrip = activeTripsList.find(t => t.id === expandedTripId);
-
-  // Initialize boarding & dropping point when expanding a trip
-  useEffect(() => {
-    if (activeTrip) {
-      setSelectedBoardingPoint(activeTrip.boardingPoints[0]?.location || '');
-      setSelectedDroppingPoint(activeTrip.droppingPoints[0]?.location || '');
-      setSelectedSeatIds([]);
-    }
-  }, [expandedTripId, activeTrip]);
-
-  const toggleSeatSelection = (seat: Seat) => {
-    if (seat.status === 'booked') return;
-    if (selectedSeatIds.includes(seat.id)) {
-      setSelectedSeatIds(selectedSeatIds.filter(id => id !== seat.id));
-    } else {
-      if (selectedSeatIds.length >= 6) {
-        alert('Maximum 6 seats can be selected per booking.');
-        return;
-      }
-      setSelectedSeatIds([...selectedSeatIds, seat.id]);
-    }
-  };
-
-  const selectedSeatsList = activeTrip 
-    ? activeTrip.seats.filter(s => selectedSeatIds.includes(s.id))
-    : [];
-
-  const totalSeatsPrice = selectedSeatsList.reduce((acc, s) => acc + s.price, 0);
-
-  // Filter trips based on type and operator
-  const filteredTrips = activeTripsList.filter(trip => {
-    if (filterOperator !== 'all' && !trip.operatorName.toLowerCase().includes(filterOperator.toLowerCase())) {
-      return false;
-    }
+  // Apply quick filter chips & AI smart query
+  const filteredTrips = activeTripsList.filter((trip) => {
     if (filterType === 'volvo' && !trip.busType.toLowerCase().includes('volvo')) {
       return false;
     }
     if (filterType === 'sleeper' && !trip.busType.toLowerCase().includes('sleeper')) {
       return false;
     }
+    if (filterType === 'toilet' && !trip.amenities.some(a => a.toLowerCase().includes('toilet'))) {
+      return false;
+    }
+    if (filterType === 'primo' && !trip.operatorName.toLowerCase().includes('primo') && !trip.operatorName.toLowerCase().includes('zingbus') && trip.rating < 4.8) {
+      return false;
+    }
+    if (filterType === 'single' && trip.availableSeatsCount < 3) {
+      return false;
+    }
+    if (aiFilterQuery.trim()) {
+      const q = aiFilterQuery.toLowerCase();
+      const match = trip.operatorName.toLowerCase().includes(q) ||
+                    trip.busType.toLowerCase().includes(q) ||
+                    trip.amenities.some(a => a.toLowerCase().includes(q));
+      if (!match) return false;
+    }
     return true;
   });
 
+  const handleOpenSeatModal = (trip: BusTrip) => {
+    setSelectedTripForModal(trip);
+    setSelectedSeats([]);
+  };
+
+  const handleToggleSeat = (seat: Seat) => {
+    if (selectedSeats.some(s => s.id === seat.id)) {
+      setSelectedSeats(selectedSeats.filter(s => s.id !== seat.id));
+    } else {
+      if (selectedSeats.length >= 6) {
+        alert('Maximum 6 seats can be selected per booking.');
+        return;
+      }
+      setSelectedSeats([...selectedSeats, seat]);
+    }
+  };
+
+  const handleProceedCheckoutFromModal = () => {
+    if (!selectedTripForModal || selectedSeats.length === 0) return;
+    onInitiateCheckout({
+      trip: selectedTripForModal,
+      selectedSeats,
+      boardingPoint: selectedTripForModal.boardingPoints[0]?.location || '',
+      droppingPoint: selectedTripForModal.droppingPoints[0]?.location || '',
+    });
+    setSelectedTripForModal(null);
+  };
+
   return (
-    <div id="buses-available-section" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 scroll-mt-20">
+    <div id="buses-available-section" className="max-w-4xl mx-auto px-3 sm:px-4 py-4 sm:py-6 scroll-mt-20">
       
-      {/* Dynamic Search Banner when user tapped Search */}
-      {searchParams && searchParams.source && searchParams.destination && (
-        <div className="mb-6 p-4 bg-gradient-to-r from-slate-900 via-slate-850 to-slate-900 text-white rounded-2xl border border-amber-400/40 shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 animate-in fade-in">
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-amber-400 text-slate-950 font-mono">
-                LIVE FLEET RESULTS
-              </span>
-              <span className="text-xs text-slate-300">
-                Travel Date: <strong>{searchParams.date}</strong> · {searchParams.passengers} Passenger(s)
-              </span>
-            </div>
-            <div className="text-xl sm:text-2xl font-bold font-display text-white mt-1 flex items-center gap-2">
-              <span className="text-amber-400">{searchParams.source}</span>
-              <span className="text-slate-400 text-lg">➜</span>
-              <span className="text-amber-400">{searchParams.destination}</span>
-            </div>
-            <p className="text-xs text-slate-300 mt-0.5">
-              Found <strong>{filteredTrips.length} available luxury buses</strong> for this route with instant seat allocation
-            </p>
-          </div>
-
+      {/* Route Header matching redBus Image 5 */}
+      <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm mb-4">
+        <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            {onClearSearch && (
-              <button
-                type="button"
-                onClick={onClearSearch}
-                className="px-3.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-lg text-xs font-semibold transition-colors"
-              >
-                View All Indian Routes
-              </button>
-            )}
+            <h1 className="text-base sm:text-lg font-bold text-slate-900 font-display flex items-center gap-2">
+              <span>{searchParams ? searchParams.source : 'Pune'}</span>
+              <span className="text-[#D84E55]">➜</span>
+              <span>{searchParams ? searchParams.destination : 'Aurangabad (Maharashtra)'}</span>
+            </h1>
+            <span className="text-xs text-slate-400 font-semibold">
+              · {filteredTrips.length} Buses
+            </span>
+          </div>
+
+          <div className="bg-red-50 border border-red-200 text-[#D84E55] px-3 py-1 rounded-full text-xs font-bold font-mono">
+            16 Oct Fri
           </div>
         </div>
-      )}
 
-      {/* Header and Filter Bar */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 pb-4 border-b border-slate-200">
-        <div>
-          <h2 className="text-2xl font-bold font-display text-slate-900 flex items-center gap-2">
-            <Bus className="w-6 h-6 text-amber-600" />
-            <span>Available Express & Sleeper Buses</span>
-          </h2>
-          <p className="text-xs text-slate-500 mt-1">
-            {filteredTrips.length} verified interstate fleets with guaranteed seat reservation and real-time GPS
-          </p>
-        </div>
+        {/* Buses vs Hotels Switcher Tabs (Image 5) */}
+        <div className="flex items-center gap-6 mt-4 border-b border-slate-200 text-sm font-bold">
+          <button
+            type="button"
+            onClick={() => setActiveCategoryTab('buses')}
+            className={`pb-2.5 border-b-2 transition-all ${
+              activeCategoryTab === 'buses'
+                ? 'border-[#D84E55] text-[#D84E55]'
+                : 'border-transparent text-slate-500 hover:text-slate-900'
+            }`}
+          >
+            Buses
+          </button>
 
-        {/* RedBus-Style Comprehensive Filter & Sort Bar */}
-        <div className="flex flex-wrap items-center gap-2 text-xs">
-          {/* Quick Filter Pills */}
-          <div className="flex flex-wrap items-center gap-1.5 bg-slate-100 rounded-lg p-1 border border-slate-200">
-            <Filter className="w-3.5 h-3.5 text-slate-500 ml-1" />
-            <button
-              onClick={() => setFilterType('all')}
-              className={`px-2.5 py-1 rounded-md font-medium transition-colors ${
-                filterType === 'all' ? 'bg-white text-slate-900 shadow-sm font-bold' : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              All Buses
-            </button>
-            <button
-              onClick={() => setFilterType('volvo')}
-              className={`px-2.5 py-1 rounded-md font-medium transition-colors ${
-                filterType === 'volvo' ? 'bg-white text-slate-900 shadow-sm font-bold' : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              Volvo 9600
-            </button>
-            <button
-              onClick={() => setFilterType('sleeper')}
-              className={`px-2.5 py-1 rounded-md font-medium transition-colors ${
-                filterType === 'sleeper' ? 'bg-white text-slate-900 shadow-sm font-bold' : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              AC Sleeper (2+1)
-            </button>
-            <button
-              onClick={() => setFilterType('night')}
-              className={`px-2.5 py-1 rounded-md font-medium transition-colors ${
-                filterType === 'night' ? 'bg-white text-slate-900 shadow-sm font-bold' : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              Night Buses (6 PM+)
-            </button>
-            <button
-              onClick={() => setFilterType('single')}
-              className={`px-2.5 py-1 rounded-md font-medium transition-colors ${
-                filterType === 'single' ? 'bg-white text-slate-900 shadow-sm font-bold' : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              Single Berths
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={() => alert("Hotels & Stays with Up to 70% Off powered by APNA TRIPS")}
+            className="pb-2.5 border-b-2 border-transparent text-slate-500 hover:text-slate-900 flex items-center gap-1.5"
+          >
+            <span>Hotels</span>
+            <span className="bg-emerald-100 text-emerald-800 text-[10px] px-1.5 py-0.2 rounded font-bold">
+              Upto 70% Off
+            </span>
+          </button>
         </div>
       </div>
 
-      {/* Bus Trips Listing */}
-      <div className="space-y-5">
-        {filteredTrips.map((trip) => {
-          const isExpanded = expandedTripId === trip.id;
-          const lowerDeckSeats = trip.seats.filter(s => s.deck === 'lower');
-          const upperDeckSeats = trip.seats.filter(s => s.deck === 'upper');
+      {/* Promos Carousel matching Image 5 */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3 mb-4 overflow-x-auto pb-1">
+        
+        {/* Banner 1: Tigra Edition (Image 5) */}
+        <div className="bg-gradient-to-r from-amber-400 via-amber-300 to-yellow-400 text-slate-950 p-3.5 rounded-2xl shadow-sm border border-amber-300 flex items-center justify-between">
+          <div>
+            <span className="text-[10px] font-black uppercase tracking-wider bg-black text-amber-400 px-1.5 py-0.5 rounded">
+              NEW TIGRA
+            </span>
+            <div className="text-xs font-extrabold mt-1">EDITION BUSES</div>
+            <div className="text-[10px] text-slate-800 font-medium">Next level comfort</div>
+          </div>
+          <span className="text-2xl">🚌</span>
+        </div>
 
-          return (
-            <div
-              key={trip.id}
-              className={`bg-white rounded-xl border transition-all ${
-                isExpanded ? 'border-amber-400 shadow-md ring-1 ring-amber-400/20' : 'border-slate-200 hover:border-slate-300'
-              }`}
-            >
-              {/* Main Bus Summary Row */}
-              <div className="p-5">
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-center">
-                  
-                  {/* Operator Info */}
-                  <div className="lg:col-span-4">
-                    <div className="flex items-center gap-2">
-                      <h3 className="text-base font-bold text-slate-900 hover:text-amber-600 transition-colors">
-                        {trip.operatorName}
-                      </h3>
-                      <span className="flex items-center gap-1 bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded text-xs font-semibold">
-                        <Star className="w-3 h-3 fill-emerald-600 text-emerald-600" />
-                        {trip.rating}
-                      </span>
-                    </div>
-                    <div className="text-xs text-slate-500 mt-1 font-medium">
-                      {trip.busType}
-                    </div>
-                    <div className="text-[11px] text-slate-400 mt-0.5 font-mono">
-                      Reg: {trip.busNumber}
-                    </div>
+        {/* Banner 2: Primo Rising Stars (Image 5) */}
+        <div className="bg-gradient-to-r from-[#1E3A8A] to-[#1E293B] text-white p-3.5 rounded-2xl shadow-sm border border-blue-900 flex items-center justify-between">
+          <div>
+            <span className="text-sm font-black text-amber-400 flex items-center gap-1">
+              <span>★</span> Primo
+            </span>
+            <div className="text-[11px] text-slate-200 font-medium mt-0.5">
+              Rising Stars on APNA TRIPS
+            </div>
+            <div className="text-[9px] text-blue-300">Top-rated operators</div>
+          </div>
+          <span className="text-xl">⭐</span>
+        </div>
 
-                    {/* Amenities Icons */}
-                    <div className="flex flex-wrap gap-2 mt-3 text-slate-500 text-[11px]">
-                      {trip.amenities.slice(0, 3).map((amenity, idx) => (
-                        <span key={idx} className="bg-slate-50 border border-slate-200 px-2 py-0.5 rounded">
-                          {amenity}
-                        </span>
-                      ))}
-                      {trip.amenities.length > 3 && (
-                        <span className="text-slate-400 self-center">+{trip.amenities.length - 3} more</span>
-                      )}
-                    </div>
-                  </div>
+        {/* Banner 3: Free Cancellation (Image 5) */}
+        <div className="bg-gradient-to-r from-rose-50 to-red-100 text-rose-950 p-3.5 rounded-2xl shadow-sm border border-red-200 flex items-center justify-between">
+          <div>
+            <div className="text-xs font-bold text-red-700">Free Cancellation</div>
+            <div className="text-[10px] text-slate-600 mt-0.5">
+              Get a full refund if you cancel up to 6h prior
+            </div>
+          </div>
+          <span className="w-8 h-8 rounded-full bg-red-200 text-red-800 flex items-center justify-center font-bold text-xs">
+            ₹
+          </span>
+        </div>
 
-                  {/* Route & Timing Schedule */}
-                  <div className="lg:col-span-5">
-                    <div className="flex items-center justify-between max-w-sm">
-                      <div className="text-left">
-                        <div className="text-lg font-bold text-slate-900 tabular-nums">
-                          {trip.departureTime}
-                        </div>
-                        <div className="text-xs font-semibold text-slate-700">{trip.sourceCity}</div>
-                        <div className="text-[11px] text-slate-400 truncate max-w-[110px]">
-                          {trip.boardingPoints[0]?.location.split(' ')[0]}
-                        </div>
-                      </div>
+      </div>
 
-                      <div className="flex flex-col items-center px-4">
-                        <div className="text-[11px] text-slate-400 font-medium tabular-nums">{trip.duration}</div>
-                        <div className="w-24 sm:w-32 h-0.5 bg-slate-300 relative my-1">
-                          <div className="absolute -top-1 left-0 w-2 h-2 rounded-full bg-slate-400" />
-                          <div className="absolute -top-1 right-0 w-2 h-2 rounded-full bg-amber-500" />
-                        </div>
-                        <div className="text-[10px] text-emerald-600 font-medium">Direct Highway Express</div>
-                      </div>
+      {/* Filter Chips matching Image 5 */}
+      <div className="flex items-center gap-2 overflow-x-auto pb-2 mb-3 text-xs">
+        <button
+          type="button"
+          onClick={() => setFilterType('all')}
+          className={`px-3 py-1.5 rounded-xl font-semibold flex items-center gap-1.5 whitespace-nowrap border transition-all ${
+            filterType === 'all'
+              ? 'bg-slate-900 text-white border-slate-900 shadow-sm'
+              : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300'
+          }`}
+        >
+          <SlidersHorizontal className="w-3.5 h-3.5" />
+          <span>Filter & Sort</span>
+        </button>
 
-                      <div className="text-right">
-                        <div className="text-lg font-bold text-slate-900 tabular-nums">
-                          {trip.arrivalTime}
-                        </div>
-                        <div className="text-xs font-semibold text-slate-700">{trip.destinationCity}</div>
-                        <div className="text-[11px] text-slate-400 truncate max-w-[110px]">
-                          {trip.droppingPoints[0]?.location.split(' ')[0]}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+        <button
+          type="button"
+          onClick={() => setFilterType(filterType === 'toilet' ? 'all' : 'toilet')}
+          className={`px-3 py-1.5 rounded-xl font-semibold flex items-center gap-1 whitespace-nowrap border transition-all ${
+            filterType === 'toilet'
+              ? 'bg-[#D84E55] text-white border-[#D84E55] shadow-sm'
+              : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300'
+          }`}
+        >
+          <span>Toilet</span>
+        </button>
 
-                  {/* Price & Primary Selection CTAs */}
-                  <div className="lg:col-span-3 flex lg:flex-col items-center lg:items-end justify-between border-t lg:border-t-0 pt-4 lg:pt-0 border-slate-100">
-                    <div className="text-left lg:text-right">
-                      <div className="text-xs text-slate-400">{t.bus.fare}</div>
-                      <div className="text-2xl font-bold font-display text-slate-900 tabular-nums">
-                        ₹{trip.fareStartingFrom.toLocaleString('en-IN')}
-                      </div>
-                      <div className="text-[11px] text-emerald-600 font-medium">
-                        {trip.availableSeatsCount} seats available
-                      </div>
-                    </div>
+        <button
+          type="button"
+          onClick={() => setFilterType(filterType === 'primo' ? 'all' : 'primo')}
+          className={`px-3 py-1.5 rounded-xl font-semibold flex items-center gap-1 whitespace-nowrap border transition-all ${
+            filterType === 'primo'
+              ? 'bg-[#D84E55] text-white border-[#D84E55] shadow-sm'
+              : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300'
+          }`}
+        >
+          <span>★ Primo Bus</span>
+        </button>
 
-                    <div className="flex items-center gap-2 mt-3">
-                      {trip.hasLiveGps && (
-                        <button
-                          type="button"
-                          onClick={() => onOpenGpsModal(trip.gpsTripId || 'gps-trip-001')}
-                          className="px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 rounded-lg flex items-center gap-1 transition-colors border border-slate-200"
-                          title="Track Live Bus Coordinates"
-                        >
-                          <Navigation className="w-3.5 h-3.5 text-amber-500" />
-                          <span>GPS Track</span>
-                        </button>
-                      )}
+        <button
+          type="button"
+          onClick={() => setFilterType(filterType === 'sleeper' ? 'all' : 'sleeper')}
+          className={`px-3 py-1.5 rounded-xl font-semibold flex items-center gap-1 whitespace-nowrap border transition-all ${
+            filterType === 'sleeper'
+              ? 'bg-[#D84E55] text-white border-[#D84E55] shadow-sm'
+              : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300'
+          }`}
+        >
+          <span>AC Sleeper</span>
+        </button>
 
-                      <button
-                        type="button"
-                        onClick={() => setExpandedTripId(isExpanded ? null : trip.id)}
-                        className={`px-4 py-2 text-xs font-semibold rounded-lg flex items-center gap-1.5 transition-colors shadow-sm ${
-                          isExpanded 
-                            ? 'bg-amber-400 text-slate-950 hover:bg-amber-300' 
-                            : 'bg-slate-900 text-amber-400 hover:bg-slate-800'
-                        }`}
-                      >
-                        <span>{isExpanded ? 'Hide Seat Map' : t.bus.selectSeats}</span>
-                        {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-                      </button>
-                    </div>
-                  </div>
+        <button
+          type="button"
+          onClick={() => setFilterType(filterType === 'single' ? 'all' : 'single')}
+          className={`px-3 py-1.5 rounded-xl font-semibold flex items-center gap-1 whitespace-nowrap border transition-all ${
+            filterType === 'single'
+              ? 'bg-[#D84E55] text-white border-[#D84E55] shadow-sm'
+              : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300'
+          }`}
+        >
+          <span>Single Berths</span>
+        </button>
+      </div>
 
+      {/* AI Smart Filter Bar (Exact matching Image 5) */}
+      <div className="bg-white rounded-2xl p-3 border border-purple-200 shadow-sm mb-5">
+        <div className="flex items-center gap-1.5 text-xs font-bold text-purple-700 mb-2">
+          <Sparkles className="w-4 h-4 text-purple-600" />
+          <span>AI Smart filter</span>
+        </div>
+        
+        <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2">
+          <input
+            type="text"
+            value={aiFilterQuery}
+            onChange={(e) => setAiFilterQuery(e.target.value)}
+            placeholder="Search 'Primo buses with toilet' or 'Humsafar'"
+            className="w-full bg-transparent text-xs text-slate-800 placeholder-slate-400 focus:outline-none font-medium"
+          />
+          <button 
+            type="button" 
+            onClick={() => setAiFilterQuery('toilet')}
+            className="text-slate-400 hover:text-slate-700" 
+            title="Voice search filter"
+          >
+            <Mic className="w-4 h-4 text-slate-500" />
+          </button>
+        </div>
+      </div>
+
+      {/* RedBus-Style Bus Cards Listing (Exact matching Image 5) */}
+      <div className="space-y-4">
+        {filteredTrips.map((trip) => (
+          <div
+            key={trip.id}
+            className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 shadow-sm hover:shadow-md transition-all hover:border-[#D84E55]/40"
+          >
+            {/* Top Tag: Direct Bus */}
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[11px] font-bold text-slate-600 bg-slate-100 px-2.5 py-0.5 rounded-full">
+                Direct Bus
+              </span>
+              <button
+                type="button"
+                onClick={() => onOpenGpsModal(trip.gpsTripId || 'gps-trip-001')}
+                className="text-[11px] font-bold text-emerald-700 flex items-center gap-1 hover:underline"
+              >
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span>Live GPS Tracking</span>
+              </button>
+            </div>
+
+            {/* Timing & Price Row (Exact Image 5) */}
+            <div className="flex items-start justify-between">
+              <div>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-xl sm:text-2xl font-bold font-display text-slate-900 tabular-nums">
+                    {trip.departureTime}
+                  </span>
+                  <span className="text-slate-400 font-bold">──</span>
+                  <span className="text-xl sm:text-2xl font-bold font-display text-slate-900 tabular-nums">
+                    {trip.arrivalTime}
+                  </span>
+                </div>
+                <div className="text-xs text-slate-500 font-medium mt-0.5">
+                  {trip.duration} · <strong className="text-slate-700">{trip.availableSeatsCount} Seats (1 Single)</strong>
                 </div>
               </div>
 
-              {/* Interactive Seat Selection Drawer */}
-              {isExpanded && (
-                <div className="border-t border-slate-200 bg-slate-50/70 p-5 rounded-b-xl">
-                  
-                  {/* Legend & 10-Minute Hold Notice */}
-                  <div className="flex flex-wrap items-center justify-between gap-3 pb-4 mb-4 border-b border-slate-200 text-xs">
-                    <div className="flex items-center gap-4 text-slate-700">
-                      <div className="flex items-center gap-1.5">
-                        <div className="w-4 h-4 rounded border border-slate-300 bg-white" />
-                        <span>{t.bus.available}</span>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <div className="w-4 h-4 rounded bg-amber-400 border border-amber-500" />
-                        <span>{t.bus.selected}</span>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <div className="w-4 h-4 rounded bg-slate-200 border border-slate-300 text-slate-400" />
-                        <span>{t.bus.booked}</span>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-1.5 text-amber-700 font-medium bg-amber-50 border border-amber-200 px-3 py-1 rounded-lg">
-                      <Timer className="w-4 h-4 text-amber-600" />
-                      <span>{t.bus.holdTimerNotice}</span>
-                    </div>
-                  </div>
-
-                  {/* Seat Decks Grid */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    
-                    {/* Lower Deck */}
-                    <div className="bg-white p-4 rounded-xl border border-slate-200">
-                      <div className="flex items-center justify-between mb-3 text-xs font-bold text-slate-800 uppercase tracking-wider">
-                        <span>Lower Deck (Berths & Pushback)</span>
-                        <span className="text-[11px] text-slate-400 font-normal">Front ➜ Driver Side</span>
-                      </div>
-                      
-                      <div className="grid grid-cols-4 gap-2.5">
-                        {lowerDeckSeats.map((seat) => {
-                          const isSelected = selectedSeatIds.includes(seat.id);
-                          const isBooked = seat.status === 'booked';
-                          return (
-                            <button
-                              key={seat.id}
-                              type="button"
-                              disabled={isBooked}
-                              onClick={() => toggleSeatSelection(seat)}
-                              className={`p-2 rounded-lg text-center font-mono text-xs transition-all flex flex-col items-center justify-center ${
-                                isBooked 
-                                  ? 'bg-slate-100 border border-slate-200 text-slate-400 cursor-not-allowed opacity-60' 
-                                  : isSelected
-                                    ? 'bg-amber-400 border-2 border-amber-500 text-slate-950 font-bold shadow-sm scale-105'
-                                    : 'bg-white border border-slate-300 hover:border-amber-400 text-slate-800 hover:shadow'
-                              }`}
-                            >
-                              <span className="text-xs">{seat.number}</span>
-                              <span className="text-[10px] tabular-nums mt-0.5">₹{seat.price}</span>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-
-                    {/* Upper Deck */}
-                    <div className="bg-white p-4 rounded-xl border border-slate-200">
-                      <div className="flex items-center justify-between mb-3 text-xs font-bold text-slate-800 uppercase tracking-wider">
-                        <span>Upper Deck (Luxury Sleepers)</span>
-                        <span className="text-[11px] text-slate-400 font-normal">Panaromic Window View</span>
-                      </div>
-
-                      <div className="grid grid-cols-4 gap-2.5">
-                        {upperDeckSeats.map((seat) => {
-                          const isSelected = selectedSeatIds.includes(seat.id);
-                          const isBooked = seat.status === 'booked';
-                          return (
-                            <button
-                              key={seat.id}
-                              type="button"
-                              disabled={isBooked}
-                              onClick={() => toggleSeatSelection(seat)}
-                              className={`p-2 rounded-lg text-center font-mono text-xs transition-all flex flex-col items-center justify-center ${
-                                isBooked 
-                                  ? 'bg-slate-100 border border-slate-200 text-slate-400 cursor-not-allowed opacity-60' 
-                                  : isSelected
-                                    ? 'bg-amber-400 border-2 border-amber-500 text-slate-950 font-bold shadow-sm scale-105'
-                                    : 'bg-white border border-slate-300 hover:border-amber-400 text-slate-800 hover:shadow'
-                              }`}
-                            >
-                              <span className="text-xs">{seat.number}</span>
-                              <span className="text-[10px] tabular-nums mt-0.5">₹{seat.price}</span>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-
-                  </div>
-
-                  {/* Boarding & Dropping Points and Proceed CTA */}
-                  <div className="mt-5 p-4 bg-white rounded-xl border border-slate-200 grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
-                    
-                    {/* Boarding point selection */}
-                    <div className="md:col-span-4">
-                      <label className="block text-xs font-semibold text-slate-700 mb-1">
-                        Select Boarding Location & Time
-                      </label>
-                      <select
-                        value={selectedBoardingPoint}
-                        onChange={(e) => setSelectedBoardingPoint(e.target.value)}
-                        className="w-full text-xs p-2 bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-amber-500 font-medium"
-                      >
-                        {trip.boardingPoints.map((bp, i) => (
-                          <option key={i} value={bp.location}>
-                            {bp.time} — {bp.location}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    {/* Dropping point selection */}
-                    <div className="md:col-span-4">
-                      <label className="block text-xs font-semibold text-slate-700 mb-1">
-                        Select Dropping Location & Time
-                      </label>
-                      <select
-                        value={selectedDroppingPoint}
-                        onChange={(e) => setSelectedDroppingPoint(e.target.value)}
-                        className="w-full text-xs p-2 bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-amber-500 font-medium"
-                      >
-                        {trip.droppingPoints.map((dp, i) => (
-                          <option key={i} value={dp.location}>
-                            {dp.time} — {dp.location}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    {/* Selected Summary and Proceed CTA */}
-                    <div className="md:col-span-4 flex items-center justify-between md:justify-end gap-4 border-t md:border-t-0 pt-3 md:pt-0 border-slate-100">
-                      <div>
-                        <div className="text-[11px] text-slate-500">
-                          {selectedSeatsList.length} seat(s) selected: {selectedSeatsList.map(s => s.number).join(', ') || 'None'}
-                        </div>
-                        <div className="text-lg font-bold font-display text-slate-900 tabular-nums">
-                          ₹{totalSeatsPrice.toLocaleString('en-IN')}
-                        </div>
-                      </div>
-
-                      <button
-                        type="button"
-                        disabled={selectedSeatsList.length === 0}
-                        onClick={() => {
-                          onInitiateCheckout({
-                            trip,
-                            selectedSeats: selectedSeatsList,
-                            boardingPoint: selectedBoardingPoint || trip.boardingPoints[0].location,
-                            droppingPoint: selectedDroppingPoint || trip.droppingPoints[0].location,
-                          });
-                        }}
-                        className={`px-4 py-2.5 rounded-lg text-xs font-bold transition-all shadow ${
-                          selectedSeatsList.length > 0
-                            ? 'bg-amber-400 hover:bg-amber-300 text-slate-950 cursor-pointer'
-                            : 'bg-slate-200 text-slate-400 cursor-not-allowed'
-                        }`}
-                      >
-                        {t.bus.continueToCheckout}
-                      </button>
-                    </div>
-
-                  </div>
-
+              {/* Price & Onwards */}
+              <div className="text-right">
+                <div className="text-xl sm:text-2xl font-bold font-display text-slate-900 tabular-nums">
+                  ₹{trip.fareStartingFrom.toLocaleString('en-IN')}
                 </div>
-              )}
+                <span className="text-[11px] text-slate-400 font-medium block">
+                  Onwards
+                </span>
+              </div>
             </div>
-          );
-        })}
+
+            {/* Operator & Bus Model (Exact Image 5) */}
+            <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="font-bold text-slate-900 text-sm">{trip.operatorName}</span>
+                  <span className="bg-emerald-600 text-white text-[11px] font-bold px-2 py-0.2 rounded flex items-center gap-0.5">
+                    ★ {trip.rating}
+                  </span>
+                  <span className="text-xs text-slate-400 font-mono">({trip.reviewCount})</span>
+                </div>
+                <div className="text-xs text-slate-500 mt-0.5 font-medium">
+                  {trip.busType}
+                </div>
+              </div>
+
+              {/* View Seats Button */}
+              <button
+                type="button"
+                onClick={() => handleOpenSeatModal(trip)}
+                className="px-4 py-2 bg-[#D84E55] hover:bg-[#C23C43] text-white text-xs font-bold rounded-xl shadow-sm transition-all active:scale-95 flex items-center gap-1.5"
+              >
+                <span>View Seats</span>
+                <ChevronRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            {/* Badges Strip: Comfort score, New Bus, 95% On Time (Exact Image 5) */}
+            <div className="flex flex-wrap items-center gap-2 mt-3 pt-2 text-[11px]">
+              <span className="bg-purple-50 text-purple-800 border border-purple-200 px-2 py-0.5 rounded font-medium">
+                Comfort score: 8.2/10
+              </span>
+              <span className="bg-blue-50 text-blue-800 border border-blue-200 px-2 py-0.5 rounded font-medium">
+                New Bus
+              </span>
+              <span className="bg-emerald-50 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded font-medium">
+                95% On Time
+              </span>
+            </div>
+
+          </div>
+        ))}
       </div>
+
+      {/* Floating "✦ Ask Ray" RedBus AI Assistant Button (Image 5 & 9) */}
+      <button
+        type="button"
+        onClick={() => alert("Ask Ray (APNA TRIPS AI Travel Companion): 'Buses from Pune to Aurangabad have high on-time performance with Humsafar and V Bus Holidays. Top recommendation: 23:00 sleeper with in-bus toilet.'")}
+        className="fixed bottom-6 right-6 z-40 px-4 py-2.5 rounded-full bg-gradient-to-r from-purple-600 via-fuchsia-600 to-[#D84E55] text-white font-bold text-xs shadow-2xl flex items-center gap-2 hover:scale-105 active:scale-95 transition-transform"
+      >
+        <Sparkles className="w-4 h-4 text-amber-300" />
+        <span>Ask Ray</span>
+      </button>
+
+      {/* Interactive Seat Details Modal matching Image 7, 8, 9, 10 */}
+      {selectedTripForModal && (
+        <RedBusSeatDetailsModal
+          isOpen={true}
+          trip={selectedTripForModal}
+          selectedSeats={selectedSeats}
+          onToggleSeat={handleToggleSeat}
+          onProceedToCheckout={handleProceedCheckoutFromModal}
+          onClose={() => setSelectedTripForModal(null)}
+        />
+      )}
 
     </div>
   );

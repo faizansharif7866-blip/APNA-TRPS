@@ -39,7 +39,7 @@ import { CustomerBookingsModal } from './components/CustomerBookingsModal';
 import { AdminPortal } from './components/AdminPortal';
 import { AuthModal } from './components/AuthModal';
 import { PublicLoginModal } from './components/PublicLoginModal';
-import { UserSettingsModal } from './components/UserSettingsModal';
+import { RedBusAccountModal } from './components/RedBusAccountModal';
 import { SplashScreen } from './components/SplashScreen';
 import { Footer } from './components/Footer';
 
@@ -365,8 +365,8 @@ export default function App() {
         onOpenAdminPortal={() => setIsAdminPortalOpen(true)}
       />
 
-      {/* RedBus-Style User Settings & Passenger Manifest Modal */}
-      <UserSettingsModal
+      {/* Official RedBus My Account Experience (Image 1, 2, 4) */}
+      <RedBusAccountModal
         currentUser={currentUser}
         bookings={bookings}
         currentLang={currentLang}
@@ -374,8 +374,19 @@ export default function App() {
         isOpen={showUserSettings}
         onClose={() => setShowUserSettings(false)}
         onOpenMyBookings={() => setIsMyBookingsOpen(true)}
+        onOpenPublicLogin={() => setShowPublicLogin(true)}
         onUserUpdated={(u) => setCurrentUser(u)}
         onLogOut={handleLogOut}
+        onNavigateTab={(tab) => {
+          if (tab === 'home') window.scrollTo({ top: 0, behavior: 'smooth' });
+          if (tab === 'bookings') setIsMyBookingsOpen(true);
+          if (tab === 'offers') {
+            const section = document.getElementById('buses-available-section');
+            if (section) section.scrollIntoView({ behavior: 'smooth' });
+          }
+          if (tab === 'getaways') setActiveCategory('resort');
+          if (tab === 'help') alert("24/7 RedBus Customer Support for APNA TRIPS: Call 1800-APNA-TRIP or write to support@apnatrips.com");
+        }}
       />
 
       {/* 3-Second Loading Splash Screen */}
