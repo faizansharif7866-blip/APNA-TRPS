@@ -41,6 +41,59 @@ export interface UserPreferences {
   walletBalance: number;
 }
 
+export type BusCategoryType = 'seater' | 'semi_sleeper' | 'sleeper' | 'combination' | 'custom';
+
+export type DeckType = 'single' | 'double';
+
+export type LayoutPositionType = 
+  | 'seater' 
+  | 'semi_sleeper' 
+  | 'single_sleeper' 
+  | 'double_sleeper' 
+  | 'aisle' 
+  | 'driver' 
+  | 'door' 
+  | 'emergency_exit' 
+  | 'stairs' 
+  | 'empty';
+
+export interface LayoutPosition {
+  id: string;
+  label: string;
+  deck: 'lower' | 'upper';
+  row: number;
+  col: number;
+  type: LayoutPositionType;
+  isWindow?: boolean;
+  isAisle?: boolean;
+  isLadies?: boolean;
+  basePrice: number;
+  status: 'available' | 'booked' | 'held';
+  passengerGender?: 'M' | 'F';
+}
+
+export interface BusFleetConfiguration {
+  id: string;
+  operatorId: string;
+  operatorName: string;
+  busName: string;
+  registrationNumber: string;
+  manufacturer: string;
+  model: string;
+  modelYear?: number;
+  category: BusCategoryType;
+  deckType: DeckType;
+  totalCapacity: number;
+  amenities: string[];
+  positions: LayoutPosition[];
+  status: 'draft' | 'approved' | 'published';
+  version: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type PortalMode = 'customer' | 'admin' | 'partner';
+
 export type BookingStatus =
   | 'PENDING'
   | 'INVENTORY_HELD'
@@ -57,10 +110,14 @@ export interface Seat {
   id: string;
   number: string;
   deck: 'lower' | 'upper';
-  type: 'sleeper' | 'seater';
+  type: 'sleeper' | 'seater' | 'semi_sleeper';
   status: 'available' | 'held' | 'booked';
   heldExpiresAt?: number;
   price: number;
+  isLadies?: boolean;
+  isWindow?: boolean;
+  berthType?: 'single' | 'double';
+  passengerGender?: 'M' | 'F';
 }
 
 export interface BusTrip {

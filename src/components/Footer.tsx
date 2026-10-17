@@ -36,18 +36,25 @@ export const Footer: React.FC<FooterProps> = ({
               APNA TRIPS is India’s premier all-in-one bus booking network. Experience authoritative real-time seat inventory, Volvo multi-axle sleepers, live GPS vehicle tracking, and bank-grade secure checkout.
             </p>
 
-            <div className="pt-2 text-slate-300 space-y-1.5 font-medium">
+            <div className="pt-2 text-slate-300 space-y-2 font-medium">
+              <a 
+                href="tel:180027628747"
+                className="inline-flex items-center gap-2 text-emerald-400 hover:text-emerald-300 font-bold transition-colors"
+                title="Call ApnaTrip-Support"
+              >
+                <PhoneCall className="w-4 h-4 text-emerald-400" />
+                <span>Call ApnaTrip-Support: 1800-APNA-TRIP (1800 2762 8747)</span>
+              </a>
               <div className="flex items-center gap-2">
-                <PhoneCall className="w-3.5 h-3.5 text-amber-400" />
-                <span>24/7 RedBus-Style Support: 1800-APNA-TRIP (1800 2762 8747)</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Mail className="w-3.5 h-3.5 text-amber-400" />
+                <Mail className="w-3.5 h-3.5 text-emerald-400" />
                 <span>support@apnatrips.com</span>
               </div>
-              <div className="flex items-center gap-2">
-                <MapPin className="w-3.5 h-3.5 text-amber-400" />
-                <span>Connaught Place, New Delhi & Indiranagar, Bengaluru</span>
+              <div className="flex items-start gap-2">
+                <MapPin className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                <div>
+                  <span className="font-semibold text-white block">Apna Trip Head Office:</span>
+                  <span className="text-slate-300">Athanavur, Yelagiri Hills, Tirupattur D.T., Tamil Nadu, 635853</span>
+                </div>
               </div>
             </div>
           </div>

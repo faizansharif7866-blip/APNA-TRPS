@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { Booking, FinancialBreakdown, Passenger, TravelCategory, UserProfile } from '../types';
 import { LanguageCode, translations } from '../services/localization';
+import { showToast } from './Toast';
 
 interface CheckoutModalProps {
   category: TravelCategory;
@@ -93,7 +94,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
       setSecondsRemaining(prev => {
         if (prev <= 1) {
           clearInterval(timer);
-          alert('Your inventory hold has expired. Please reselect your travel options.');
+          showToast('Your inventory hold has expired. Please reselect your travel options.', 'warning');
           onClose();
           return 0;
         }

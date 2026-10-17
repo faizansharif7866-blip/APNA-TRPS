@@ -1,49 +1,43 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { 
   Bus, 
-  Clock, 
-  MapPin, 
+  SlidersHorizontal, 
   Star, 
+  MapPin, 
+  Clock, 
+  ShieldCheck, 
+  Sparkles, 
+  ChevronRight, 
   Wifi, 
+  Coffee, 
   Zap, 
-  Shield, 
-  Navigation, 
-  Check, 
-  AlertCircle,
-  Timer,
-  ChevronDown,
-  ChevronUp,
-  ChevronRight,
-  Filter,
+  Compass, 
+  Filter, 
+  Search,
+  CheckCircle2,
   Mic,
-  Sparkles,
-  ArrowRight,
-  SlidersHorizontal,
-  ThumbsUp,
-  Heart,
-  Percent
+  ArrowRight
 } from 'lucide-react';
 import { BusTrip, Seat } from '../types';
-import { LanguageCode, translations } from '../services/localization';
-import { generateBusSeats } from '../data/mockData';
+import { LanguageCode } from '../services/localization';
 import { RedBusSeatDetailsModal } from './RedBusSeatDetailsModal';
-
-export interface BusSearchParams {
-  source: string;
-  destination: string;
-  date: string;
-  passengers: number;
-  womenOnly?: boolean;
-}
+import { generateBusSeats } from '../data/mockData';
+import { showToast } from './Toast';
 
 interface BusBookingViewProps {
   trips: BusTrip[];
   lang: LanguageCode;
-  searchParams?: BusSearchParams | null;
-  onClearSearch?: () => void;
-  onSelectRoute?: (source: string, destination: string) => void;
+  searchParams: {
+    source: string;
+    destination: string;
+    date: string;
+    passengers: number;
+    womenOnly?: boolean;
+  } | null;
+  onClearSearch: () => void;
+  onSelectRoute: (source: string, destination: string) => void;
   onOpenGpsModal: (tripId: string) => void;
-  onInitiateCheckout: (bookingData: {
+  onInitiateCheckout: (data: {
     trip: BusTrip;
     selectedSeats: Seat[];
     boardingPoint: string;
@@ -70,120 +64,90 @@ export const BusBookingView: React.FC<BusBookingViewProps> = ({
   const generateDynamicTripsForRoute = (source: string, dest: string, date: string): BusTrip[] => {
     return [
       {
-        id: `humsafar-1`,
+        id: `srisai-1`,
         supplierId: 'sup-001',
-        operatorName: 'Humsafar Travels',
-        busNumber: 'MH-12-RN-7711',
-        busType: 'Bharat Benz A/C Sleeper (2+1)',
+        operatorName: 'SRI SAI TRAVELS',
+        busNumber: 'KA-01-EQ-9876',
+        busType: 'Volvo 9600 Multi-Axle Luxury Sleeper (2+1)',
         sourceCity: source,
         destinationCity: dest,
-        departureTime: '23:00',
-        arrivalTime: '06:00',
-        duration: '7h 00m',
-        rating: 4.6,
-        reviewCount: 867,
+        departureTime: '22:30',
+        arrivalTime: '05:40',
+        duration: '7h 10m',
+        rating: 4.9,
+        reviewCount: 1383,
         totalSeats: 30,
-        availableSeatsCount: 11,
-        fareStartingFrom: 1150,
-        amenities: ['Live GPS Tracking', 'Toilet', 'Personal AC Vents', 'Charging Point', 'Blanket & Pillow', 'Reading Light'],
+        availableSeatsCount: 9,
+        fareStartingFrom: 1599,
+        amenities: ['Live GPS Tracking', 'Toilet', 'Personal AC Vents', 'Charging Point', 'Blanket & Pillow', 'Reading Light', 'Primo Lounge'],
         boardingPoints: [
-          { location: `${source} Swargate Private Bus Stand`, time: '23:00' },
-          { location: `${source} Viman Nagar Bypass`, time: '23:45' },
+          { location: `${source} Central Omni Bus Terminus`, time: '22:30' },
+          { location: `${source} Highway Toll Bypass`, time: '23:15' },
         ],
         droppingPoints: [
-          { location: `${dest} CIDCO Bus Stand`, time: '05:30' },
-          { location: `${dest} Central Railway Station`, time: '06:00' },
+          { location: `${dest} Main City Junction`, time: '05:00' },
+          { location: `${dest} Central Railway Terminus`, time: '05:40' },
         ],
         cancellationPolicy: 'Free cancellation up to 6 hours before departure.',
         hasLiveGps: true,
         gpsTripId: 'gps-trip-001',
-        seats: generateBusSeats(1150),
+        seats: generateBusSeats(1599),
       },
       {
-        id: `vbus-2`,
+        id: `humsafar-2`,
         supplierId: 'sup-002',
-        operatorName: 'V Bus Holidays Royal',
-        busNumber: 'MH-20-EQ-5522',
-        busType: 'Scania Metrolink Multi-Axle AC Sleeper',
+        operatorName: 'Humsafar Travels Royal Class',
+        busNumber: 'MH-12-RN-7711',
+        busType: 'BharatBenz A/C Sleeper (2+1)',
         sourceCity: source,
         destinationCity: dest,
-        departureTime: '22:00',
-        arrivalTime: '05:00',
-        duration: '7h 00m',
-        rating: 4.9,
-        reviewCount: 1374,
+        departureTime: '21:00',
+        arrivalTime: '04:30',
+        duration: '7h 30m',
+        rating: 4.8,
+        reviewCount: 942,
         totalSeats: 30,
-        availableSeatsCount: 7,
-        fareStartingFrom: 1180,
-        amenities: ['Live GPS Tracking', 'Toilet', 'WiFi Hotspot', 'Snack Pack', 'Emergency SOS', 'Comfort Sleep Berths'],
+        availableSeatsCount: 12,
+        fareStartingFrom: 1450,
+        amenities: ['Live GPS Tracking', 'Toilet', 'WiFi Hotspot', 'Snack Pack', 'Emergency SOS'],
         boardingPoints: [
-          { location: `${source} Wakad Highway Toll`, time: '22:00' },
-          { location: `${source} Shivaji Nagar`, time: '22:45' },
+          { location: `${source} Swargate Private Bus Stand`, time: '21:00' },
         ],
         droppingPoints: [
-          { location: `${dest} Kranti Chowk`, time: '04:30' },
-          { location: `${dest} Central Terminus`, time: '05:00' },
+          { location: `${dest} City Bypass Dropoff`, time: '04:30' },
         ],
         cancellationPolicy: 'Full refund up to 7 hours before journey.',
         hasLiveGps: true,
         gpsTripId: 'gps-trip-002',
-        seats: generateBusSeats(1180),
+        seats: generateBusSeats(1450),
       },
       {
         id: `zingbus-3`,
         supplierId: 'sup-003',
-        operatorName: 'Zingbus Luxury Primo Lounge',
+        operatorName: 'Zingbus Primo Lounge',
         busNumber: 'DL-01-EQ-9876',
-        busType: 'Volvo 9600 Multi-Axle AC Sleeper (2+1)',
-        sourceCity: source,
-        destinationCity: dest,
-        departureTime: '21:30',
-        arrivalTime: '05:15',
-        duration: '7h 45m',
-        rating: 4.8,
-        reviewCount: 2120,
-        totalSeats: 30,
-        availableSeatsCount: 16,
-        fareStartingFrom: 1250,
-        amenities: ['Primo Lounge Access', 'Toilet', 'Live GPS Tracking', 'Clean Restroom Guarantee', 'CCTV Surveillance'],
-        boardingPoints: [
-          { location: `${source} Zingbus Express Lounge`, time: '21:30' },
-        ],
-        droppingPoints: [
-          { location: `${dest} City Bypass Dropoff`, time: '05:15' },
-        ],
-        cancellationPolicy: '100% refund if cancelled 6 hours prior.',
-        hasLiveGps: true,
-        gpsTripId: 'gps-trip-003',
-        seats: generateBusSeats(1250),
-      },
-      {
-        id: `humsafar-4`,
-        supplierId: 'sup-001',
-        operatorName: 'Humsafar Travels Superfast',
-        busNumber: 'MH-14-BT-9900',
-        busType: 'Bharat Benz A/C Sleeper (2+1)',
+        busType: 'Scania Metrolink Multi-Axle AC Sleeper',
         sourceCity: source,
         destinationCity: dest,
         departureTime: '23:30',
         arrivalTime: '06:45',
         duration: '7h 15m',
-        rating: 4.6,
-        reviewCount: 694,
+        rating: 4.9,
+        reviewCount: 2120,
         totalSeats: 30,
         availableSeatsCount: 14,
-        fareStartingFrom: 1120,
-        amenities: ['Live GPS Tracking', 'AC Vents', 'Charging Point', 'Blanket & Pillow'],
+        fareStartingFrom: 1699,
+        amenities: ['Primo Lounge Access', 'Toilet', 'Live GPS Tracking', 'Clean Restroom Guarantee'],
         boardingPoints: [
-          { location: `${source} Swargate Station`, time: '23:30' },
+          { location: `${source} Primo Express Lounge`, time: '23:30' },
         ],
         droppingPoints: [
-          { location: `${dest} CIDCO Terminal`, time: '06:45' },
+          { location: `${dest} Metro Station Gate 2`, time: '06:45' },
         ],
-        cancellationPolicy: 'Free cancellation up to 6 hours before departure.',
+        cancellationPolicy: '100% refund if cancelled 6 hours prior.',
         hasLiveGps: true,
-        gpsTripId: 'gps-trip-001',
-        seats: generateBusSeats(1120),
+        gpsTripId: 'gps-trip-003',
+        seats: generateBusSeats(1699),
       },
     ];
   };
@@ -196,7 +160,7 @@ export const BusBookingView: React.FC<BusBookingViewProps> = ({
     const s = searchParams.source.trim().toLowerCase();
     const d = searchParams.destination.trim().toLowerCase();
 
-    const matched = trips.filter(trip => 
+    const matched = trips.filter((trip) => 
       trip.sourceCity.toLowerCase().includes(s) && trip.destinationCity.toLowerCase().includes(d)
     );
 
@@ -207,7 +171,7 @@ export const BusBookingView: React.FC<BusBookingViewProps> = ({
     return generateDynamicTripsForRoute(searchParams.source.trim(), searchParams.destination.trim(), searchParams.date);
   }, [trips, searchParams]);
 
-  // Apply quick filter chips & AI smart query
+  // Filters
   const filteredTrips = activeTripsList.filter((trip) => {
     if (filterType === 'volvo' && !trip.busType.toLowerCase().includes('volvo')) {
       return false;
@@ -215,10 +179,10 @@ export const BusBookingView: React.FC<BusBookingViewProps> = ({
     if (filterType === 'sleeper' && !trip.busType.toLowerCase().includes('sleeper')) {
       return false;
     }
-    if (filterType === 'toilet' && !trip.amenities.some(a => a.toLowerCase().includes('toilet'))) {
+    if (filterType === 'toilet' && !trip.amenities.some((a) => a.toLowerCase().includes('toilet'))) {
       return false;
     }
-    if (filterType === 'primo' && !trip.operatorName.toLowerCase().includes('primo') && !trip.operatorName.toLowerCase().includes('zingbus') && trip.rating < 4.8) {
+    if (filterType === 'primo' && !trip.operatorName.toLowerCase().includes('primo') && !trip.operatorName.toLowerCase().includes('sai') && trip.rating < 4.8) {
       return false;
     }
     if (filterType === 'single' && trip.availableSeatsCount < 3) {
@@ -228,7 +192,7 @@ export const BusBookingView: React.FC<BusBookingViewProps> = ({
       const q = aiFilterQuery.toLowerCase();
       const match = trip.operatorName.toLowerCase().includes(q) ||
                     trip.busType.toLowerCase().includes(q) ||
-                    trip.amenities.some(a => a.toLowerCase().includes(q));
+                    trip.amenities.some((a) => a.toLowerCase().includes(q));
       if (!match) return false;
     }
     return true;
@@ -240,11 +204,11 @@ export const BusBookingView: React.FC<BusBookingViewProps> = ({
   };
 
   const handleToggleSeat = (seat: Seat) => {
-    if (selectedSeats.some(s => s.id === seat.id)) {
-      setSelectedSeats(selectedSeats.filter(s => s.id !== seat.id));
+    if (selectedSeats.some((s) => s.id === seat.id)) {
+      setSelectedSeats(selectedSeats.filter((s) => s.id !== seat.id));
     } else {
       if (selectedSeats.length >= 6) {
-        alert('Maximum 6 seats can be selected per booking.');
+        showToast('Maximum 6 seats can be selected per booking.', 'warning');
         return;
       }
       setSelectedSeats([...selectedSeats, seat]);
@@ -262,45 +226,48 @@ export const BusBookingView: React.FC<BusBookingViewProps> = ({
     setSelectedTripForModal(null);
   };
 
+  const displaySource = searchParams ? searchParams.source : 'Chennai';
+  const displayDest = searchParams ? searchParams.destination : 'Bengaluru';
+
   return (
     <div id="buses-available-section" className="max-w-4xl mx-auto px-3 sm:px-4 py-4 sm:py-6 scroll-mt-20">
       
-      {/* Route Header matching redBus Image 5 */}
+      {/* Route Header Card */}
       <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm mb-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <h1 className="text-base sm:text-lg font-bold text-slate-900 font-display flex items-center gap-2">
-              <span>{searchParams ? searchParams.source : 'Pune'}</span>
-              <span className="text-[#D84E55]">➜</span>
-              <span>{searchParams ? searchParams.destination : 'Aurangabad (Maharashtra)'}</span>
+              <span>{displaySource}</span>
+              <span className="text-emerald-600">➜</span>
+              <span>{displayDest}</span>
             </h1>
             <span className="text-xs text-slate-400 font-semibold">
-              · {filteredTrips.length} Buses
+              · {filteredTrips.length} Available Buses
             </span>
           </div>
 
-          <div className="bg-red-50 border border-red-200 text-[#D84E55] px-3 py-1 rounded-full text-xs font-bold font-mono">
-            16 Oct Fri
+          <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 px-3 py-1 rounded-full text-xs font-bold font-mono">
+            {searchParams?.date === '2026-10-17' ? 'Sat 17-Oct' : 'Fri 16-Oct'}
           </div>
         </div>
 
-        {/* Buses vs Hotels Switcher Tabs (Image 5) */}
+        {/* Tab switchers */}
         <div className="flex items-center gap-6 mt-4 border-b border-slate-200 text-sm font-bold">
           <button
             type="button"
             onClick={() => setActiveCategoryTab('buses')}
             className={`pb-2.5 border-b-2 transition-all ${
               activeCategoryTab === 'buses'
-                ? 'border-[#D84E55] text-[#D84E55]'
+                ? 'border-emerald-600 text-emerald-800'
                 : 'border-transparent text-slate-500 hover:text-slate-900'
             }`}
           >
-            Buses
+            Buses ({filteredTrips.length})
           </button>
 
           <button
             type="button"
-            onClick={() => alert("Hotels & Stays with Up to 70% Off powered by APNA TRIPS")}
+            onClick={() => showToast("Hotels & Stays with Up to 70% Off available in Hotel tab", "info")}
             className="pb-2.5 border-b-2 border-transparent text-slate-500 hover:text-slate-900 flex items-center gap-1.5"
           >
             <span>Hotels</span>
@@ -311,10 +278,10 @@ export const BusBookingView: React.FC<BusBookingViewProps> = ({
         </div>
       </div>
 
-      {/* Promos Carousel matching Image 5 */}
+      {/* Promos Carousel */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3 mb-4 overflow-x-auto pb-1">
         
-        {/* Banner 1: Tigra Edition (Image 5) */}
+        {/* Banner 1: Tigra Edition */}
         <div className="bg-gradient-to-r from-amber-400 via-amber-300 to-yellow-400 text-slate-950 p-3.5 rounded-2xl shadow-sm border border-amber-300 flex items-center justify-between">
           <div>
             <span className="text-[10px] font-black uppercase tracking-wider bg-black text-amber-400 px-1.5 py-0.5 rounded">
@@ -326,7 +293,7 @@ export const BusBookingView: React.FC<BusBookingViewProps> = ({
           <span className="text-2xl">🚌</span>
         </div>
 
-        {/* Banner 2: Primo Rising Stars (Image 5) */}
+        {/* Banner 2: Primo Rising Stars */}
         <div className="bg-gradient-to-r from-[#1E3A8A] to-[#1E293B] text-white p-3.5 rounded-2xl shadow-sm border border-blue-900 flex items-center justify-between">
           <div>
             <span className="text-sm font-black text-amber-400 flex items-center gap-1">
@@ -340,22 +307,22 @@ export const BusBookingView: React.FC<BusBookingViewProps> = ({
           <span className="text-xl">⭐</span>
         </div>
 
-        {/* Banner 3: Free Cancellation (Image 5) */}
-        <div className="bg-gradient-to-r from-rose-50 to-red-100 text-rose-950 p-3.5 rounded-2xl shadow-sm border border-red-200 flex items-center justify-between">
+        {/* Banner 3: Free Cancellation */}
+        <div className="bg-gradient-to-r from-emerald-50 to-teal-100 text-emerald-950 p-3.5 rounded-2xl shadow-sm border border-emerald-200 flex items-center justify-between">
           <div>
-            <div className="text-xs font-bold text-red-700">Free Cancellation</div>
+            <div className="text-xs font-bold text-emerald-800">Free Cancellation</div>
             <div className="text-[10px] text-slate-600 mt-0.5">
-              Get a full refund if you cancel up to 6h prior
+              Get full refund if you cancel up to 6h prior
             </div>
           </div>
-          <span className="w-8 h-8 rounded-full bg-red-200 text-red-800 flex items-center justify-center font-bold text-xs">
+          <span className="w-8 h-8 rounded-full bg-emerald-200 text-emerald-900 flex items-center justify-center font-bold text-xs">
             ₹
           </span>
         </div>
 
       </div>
 
-      {/* Filter Chips matching Image 5 */}
+      {/* Filter Chips */}
       <div className="flex items-center gap-2 overflow-x-auto pb-2 mb-3 text-xs">
         <button
           type="button"
@@ -375,11 +342,11 @@ export const BusBookingView: React.FC<BusBookingViewProps> = ({
           onClick={() => setFilterType(filterType === 'toilet' ? 'all' : 'toilet')}
           className={`px-3 py-1.5 rounded-xl font-semibold flex items-center gap-1 whitespace-nowrap border transition-all ${
             filterType === 'toilet'
-              ? 'bg-[#D84E55] text-white border-[#D84E55] shadow-sm'
+              ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
               : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300'
           }`}
         >
-          <span>Toilet</span>
+          <span>Toilet on Board</span>
         </button>
 
         <button
@@ -387,7 +354,7 @@ export const BusBookingView: React.FC<BusBookingViewProps> = ({
           onClick={() => setFilterType(filterType === 'primo' ? 'all' : 'primo')}
           className={`px-3 py-1.5 rounded-xl font-semibold flex items-center gap-1 whitespace-nowrap border transition-all ${
             filterType === 'primo'
-              ? 'bg-[#D84E55] text-white border-[#D84E55] shadow-sm'
+              ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
               : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300'
           }`}
         >
@@ -399,7 +366,7 @@ export const BusBookingView: React.FC<BusBookingViewProps> = ({
           onClick={() => setFilterType(filterType === 'sleeper' ? 'all' : 'sleeper')}
           className={`px-3 py-1.5 rounded-xl font-semibold flex items-center gap-1 whitespace-nowrap border transition-all ${
             filterType === 'sleeper'
-              ? 'bg-[#D84E55] text-white border-[#D84E55] shadow-sm'
+              ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
               : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300'
           }`}
         >
@@ -411,7 +378,7 @@ export const BusBookingView: React.FC<BusBookingViewProps> = ({
           onClick={() => setFilterType(filterType === 'single' ? 'all' : 'single')}
           className={`px-3 py-1.5 rounded-xl font-semibold flex items-center gap-1 whitespace-nowrap border transition-all ${
             filterType === 'single'
-              ? 'bg-[#D84E55] text-white border-[#D84E55] shadow-sm'
+              ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
               : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300'
           }`}
         >
@@ -419,11 +386,11 @@ export const BusBookingView: React.FC<BusBookingViewProps> = ({
         </button>
       </div>
 
-      {/* AI Smart Filter Bar (Exact matching Image 5) */}
-      <div className="bg-white rounded-2xl p-3 border border-purple-200 shadow-sm mb-5">
-        <div className="flex items-center gap-1.5 text-xs font-bold text-purple-700 mb-2">
-          <Sparkles className="w-4 h-4 text-purple-600" />
-          <span>AI Smart filter</span>
+      {/* AI Smart Filter Bar */}
+      <div className="bg-white rounded-2xl p-3 border border-emerald-200 shadow-sm mb-5">
+        <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-800 mb-2">
+          <Sparkles className="w-4 h-4 text-emerald-600" />
+          <span>Smart Route Filter</span>
         </div>
         
         <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2">
@@ -431,31 +398,30 @@ export const BusBookingView: React.FC<BusBookingViewProps> = ({
             type="text"
             value={aiFilterQuery}
             onChange={(e) => setAiFilterQuery(e.target.value)}
-            placeholder="Search 'Primo buses with toilet' or 'Humsafar'"
+            placeholder="Search 'Sri Sai Travels', 'Volvo with toilet', or 'Primo'"
             className="w-full bg-transparent text-xs text-slate-800 placeholder-slate-400 focus:outline-none font-medium"
           />
           <button 
             type="button" 
-            onClick={() => setAiFilterQuery('toilet')}
-            className="text-slate-400 hover:text-slate-700" 
-            title="Voice search filter"
+            onClick={() => setAiFilterQuery('Sri Sai')}
+            className="text-slate-400 hover:text-slate-700 text-xs font-semibold"
           >
-            <Mic className="w-4 h-4 text-slate-500" />
+            Sri Sai
           </button>
         </div>
       </div>
 
-      {/* RedBus-Style Bus Cards Listing (Exact matching Image 5) */}
+      {/* Bus Cards Listing */}
       <div className="space-y-4">
         {filteredTrips.map((trip) => (
           <div
             key={trip.id}
-            className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 shadow-sm hover:shadow-md transition-all hover:border-[#D84E55]/40"
+            className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 shadow-sm hover:shadow-md transition-all hover:border-emerald-500/50"
           >
             {/* Top Tag: Direct Bus */}
             <div className="flex items-center justify-between mb-2">
               <span className="text-[11px] font-bold text-slate-600 bg-slate-100 px-2.5 py-0.5 rounded-full">
-                Direct Bus
+                Direct Express Bus
               </span>
               <button
                 type="button"
@@ -467,7 +433,7 @@ export const BusBookingView: React.FC<BusBookingViewProps> = ({
               </button>
             </div>
 
-            {/* Timing & Price Row (Exact Image 5) */}
+            {/* Timing & Price Row */}
             <div className="flex items-start justify-between">
               <div>
                 <div className="flex items-baseline gap-2">
@@ -480,7 +446,7 @@ export const BusBookingView: React.FC<BusBookingViewProps> = ({
                   </span>
                 </div>
                 <div className="text-xs text-slate-500 font-medium mt-0.5">
-                  {trip.duration} · <strong className="text-slate-700">{trip.availableSeatsCount} Seats (1 Single)</strong>
+                  {trip.duration} · <strong className="text-slate-700">{trip.availableSeatsCount} Seats Left (1 Single)</strong>
                 </div>
               </div>
 
@@ -495,7 +461,7 @@ export const BusBookingView: React.FC<BusBookingViewProps> = ({
               </div>
             </div>
 
-            {/* Operator & Bus Model (Exact Image 5) */}
+            {/* Operator & Bus Model */}
             <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between">
               <div>
                 <div className="flex items-center gap-2">
@@ -510,27 +476,27 @@ export const BusBookingView: React.FC<BusBookingViewProps> = ({
                 </div>
               </div>
 
-              {/* View Seats Button */}
+              {/* View Seats Button in Emerald Green (Red replaced!) */}
               <button
                 type="button"
                 onClick={() => handleOpenSeatModal(trip)}
-                className="px-4 py-2 bg-[#D84E55] hover:bg-[#C23C43] text-white text-xs font-bold rounded-xl shadow-sm transition-all active:scale-95 flex items-center gap-1.5"
+                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-sm transition-all active:scale-95 flex items-center gap-1.5"
               >
                 <span>View Seats</span>
                 <ChevronRight className="w-3.5 h-3.5" />
               </button>
             </div>
 
-            {/* Badges Strip: Comfort score, New Bus, 95% On Time (Exact Image 5) */}
+            {/* Badges Strip */}
             <div className="flex flex-wrap items-center gap-2 mt-3 pt-2 text-[11px]">
-              <span className="bg-purple-50 text-purple-800 border border-purple-200 px-2 py-0.5 rounded font-medium">
-                Comfort score: 8.2/10
+              <span className="bg-emerald-50 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded font-medium">
+                Comfort score: 8.8/10
               </span>
               <span className="bg-blue-50 text-blue-800 border border-blue-200 px-2 py-0.5 rounded font-medium">
                 New Bus
               </span>
-              <span className="bg-emerald-50 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded font-medium">
-                95% On Time
+              <span className="bg-teal-50 text-teal-800 border border-teal-200 px-2 py-0.5 rounded font-medium">
+                98% On Time
               </span>
             </div>
 
@@ -538,17 +504,17 @@ export const BusBookingView: React.FC<BusBookingViewProps> = ({
         ))}
       </div>
 
-      {/* Floating "✦ Ask Ray" RedBus AI Assistant Button (Image 5 & 9) */}
+      {/* Floating Ask Ray Companion Button */}
       <button
         type="button"
-        onClick={() => alert("Ask Ray (APNA TRIPS AI Travel Companion): 'Buses from Pune to Aurangabad have high on-time performance with Humsafar and V Bus Holidays. Top recommendation: 23:00 sleeper with in-bus toilet.'")}
-        className="fixed bottom-6 right-6 z-40 px-4 py-2.5 rounded-full bg-gradient-to-r from-purple-600 via-fuchsia-600 to-[#D84E55] text-white font-bold text-xs shadow-2xl flex items-center gap-2 hover:scale-105 active:scale-95 transition-transform"
+        onClick={() => showToast("Ask Ray: Sri Sai Travels 22:30 Volvo Sleeper has highest on-time punctuality with clean restroom guarantee.", "info")}
+        className="fixed bottom-6 right-6 z-40 px-4 py-2.5 rounded-full bg-gradient-to-r from-emerald-600 to-teal-700 text-white font-bold text-xs shadow-2xl flex items-center gap-2 hover:scale-105 active:scale-95 transition-transform"
       >
         <Sparkles className="w-4 h-4 text-amber-300" />
         <span>Ask Ray</span>
       </button>
 
-      {/* Interactive Seat Details Modal matching Image 7, 8, 9, 10 */}
+      {/* Interactive Seat Details Modal matching user's uploaded screenshot */}
       {selectedTripForModal && (
         <RedBusSeatDetailsModal
           isOpen={true}

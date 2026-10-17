@@ -21,7 +21,10 @@ import {
   Percent,
   Compass,
   CheckCircle2,
-  X
+  X,
+  PhoneCall,
+  MapPin,
+  Mail
 } from 'lucide-react';
 import { Booking, CoPassenger, UserPreferences, UserProfile } from '../types';
 import { 
@@ -64,7 +67,7 @@ export const RedBusAccountModal: React.FC<RedBusAccountModalProps> = ({
   const [coPassengers, setCoPassengers] = useState<CoPassenger[]>(getStoredCoPassengers());
   const [bookingForWomen, setBookingForWomen] = useState(false);
   const [themeMode, setThemeMode] = useState<'light' | 'dark'>('light');
-  const [activeSubView, setActiveSubView] = useState<'main' | 'passengers' | 'irctc' | 'personal'>('main');
+  const [activeSubView, setActiveSubView] = useState<'main' | 'passengers' | 'irctc' | 'personal' | 'help'>('main');
 
   // New Co-passenger form
   const [newPassName, setNewPassName] = useState('');
@@ -114,7 +117,15 @@ export const RedBusAccountModal: React.FC<RedBusAccountModalProps> = ({
               <ArrowLeft className="w-5 h-5" />
             </button>
             <h2 className="text-lg font-bold text-slate-900 font-display">
-              {activeSubView === 'passengers' ? 'Saved Passengers' : 'My Account'}
+              {activeSubView === 'passengers' 
+                ? 'Saved Passengers' 
+                : activeSubView === 'help' 
+                ? 'ApnaTrip-Support' 
+                : activeSubView === 'irctc'
+                ? 'IRCTC Integration'
+                : activeSubView === 'personal'
+                ? 'Personal Information'
+                : 'My Account'}
             </h2>
           </div>
 
@@ -408,15 +419,15 @@ export const RedBusAccountModal: React.FC<RedBusAccountModalProps> = ({
               <div className="divide-y divide-slate-100 border-t border-b border-slate-100 text-sm">
                 <button
                   type="button"
-                  onClick={() => {
-                    onClose();
-                    if (onNavigateTab) onNavigateTab('help');
-                  }}
+                  onClick={() => setActiveSubView('help')}
                   className="w-full py-3.5 flex items-center justify-between hover:bg-slate-50 px-1"
                 >
                   <div className="flex items-center gap-3">
                     <HelpCircle className="w-5 h-5 text-slate-700" />
-                    <span className="font-medium text-slate-800">Help</span>
+                    <div>
+                      <span className="font-medium text-slate-800 block text-left">Help & Support</span>
+                      <span className="text-[11px] text-emerald-600 block text-left">Call ApnaTrip-Support & Head Office</span>
+                    </div>
                   </div>
                   <ChevronRight className="w-4 h-4 text-slate-400" />
                 </button>
@@ -566,10 +577,78 @@ export const RedBusAccountModal: React.FC<RedBusAccountModalProps> = ({
               />
               <button
                 type="button"
-                className="w-full py-2.5 bg-[#D84E55] text-white font-bold rounded-xl text-xs shadow-sm"
+                className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs shadow-sm"
               >
                 Verify IRCTC ID
               </button>
+            </div>
+          )}
+
+          {/* SubView: Help & Support (Call ApnaTrip-Support & Head Office) */}
+          {activeSubView === 'help' && (
+            <div className="p-4 sm:p-5 space-y-4 text-xs">
+              
+              {/* Call ApnaTrip-Support Hero Card */}
+              <div className="bg-gradient-to-br from-emerald-600 to-teal-700 text-white rounded-2xl p-5 shadow-lg space-y-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center text-white">
+                    <PhoneCall className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-extrabold text-base leading-tight">Call ApnaTrip-Support</h3>
+                    <p className="text-[11px] text-emerald-100">24/7 Dedicated Indian Travel Helpline</p>
+                  </div>
+                </div>
+
+                <p className="text-xs text-emerald-50 leading-relaxed">
+                  Need immediate help with your seat allocation, live GPS bus tracking, booking cancellations, or instant refund status?
+                </p>
+
+                <a
+                  href="tel:180027628747"
+                  className="w-full py-3 bg-white text-emerald-900 hover:bg-emerald-50 font-bold rounded-xl flex items-center justify-center gap-2 shadow-sm transition-all active:scale-95 text-sm"
+                >
+                  <PhoneCall className="w-4 h-4 text-emerald-600" />
+                  <span>Call 1800-APNA-TRIP (1800 2762 8747)</span>
+                </a>
+              </div>
+
+              {/* Head Office Location Card */}
+              <div className="bg-slate-50 rounded-2xl border border-slate-200 p-4 space-y-2">
+                <div className="flex items-start gap-2.5">
+                  <div className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0 mt-0.5">
+                    <MapPin className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-slate-900 text-sm">Apna Trip Head Office</h4>
+                    <p className="text-[11px] text-slate-600 font-medium mt-1 leading-relaxed">
+                      Athanavur, yelagiri hills, Tirupatture d.t, Tamilnadu, 635853
+                    </p>
+                    <span className="inline-block mt-2 text-[10px] bg-slate-200 text-slate-700 px-2 py-0.5 rounded font-mono">
+                      PIN: 635853 · Tirupattur District
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Email & Grievance Officer */}
+              <div className="bg-white rounded-2xl border border-slate-200 p-4 space-y-3">
+                <div className="flex items-center gap-2.5 text-slate-700">
+                  <Mail className="w-4 h-4 text-emerald-600" />
+                  <div>
+                    <span className="text-[10px] text-slate-400 block">Support Email</span>
+                    <a href="mailto:support@apnatrips.com" className="font-semibold text-slate-900 hover:text-emerald-600">
+                      support@apnatrips.com
+                    </a>
+                  </div>
+                </div>
+
+                <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
+                  <span>Consumer Grievance Response:</span>
+                  <span className="font-semibold text-emerald-700">&lt; 15 mins turnaround</span>
+                </div>
+              </div>
+
             </div>
           )}
 
@@ -580,10 +659,14 @@ export const RedBusAccountModal: React.FC<RedBusAccountModalProps> = ({
           <button
             type="button"
             onClick={() => {
-              onClose();
-              if (onNavigateTab) onNavigateTab('home');
+              if (activeSubView !== 'main') {
+                setActiveSubView('main');
+              } else {
+                onClose();
+                if (onNavigateTab) onNavigateTab('home');
+              }
             }}
-            className="flex flex-col items-center justify-center gap-1 text-[#D84E55] py-1"
+            className="flex flex-col items-center justify-center gap-1 text-emerald-600 py-1"
           >
             <Compass className="w-4 h-4" />
             <span className="text-[10px] font-bold">Home</span>
@@ -630,11 +713,10 @@ export const RedBusAccountModal: React.FC<RedBusAccountModalProps> = ({
 
           <button
             type="button"
-            onClick={() => {
-              onClose();
-              if (onNavigateTab) onNavigateTab('help');
-            }}
-            className="flex flex-col items-center justify-center gap-1 text-slate-500 hover:text-slate-800 py-1"
+            onClick={() => setActiveSubView('help')}
+            className={`flex flex-col items-center justify-center gap-1 py-1 transition-colors ${
+              activeSubView === 'help' ? 'text-emerald-600 font-bold' : 'text-slate-500 hover:text-slate-800'
+            }`}
           >
             <HelpCircle className="w-4 h-4" />
             <span className="text-[10px] font-medium">Help</span>

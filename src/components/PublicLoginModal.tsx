@@ -20,8 +20,6 @@ interface PublicLoginModalProps {
   isOpen: boolean;
   onClose: () => void;
   onLoginSuccess: (user: UserProfile) => void;
-  onOpenAdminPortal?: () => void;
-  onOpenSupplierPortal?: () => void;
 }
 
 export const PublicLoginModal: React.FC<PublicLoginModalProps> = ({
@@ -29,8 +27,6 @@ export const PublicLoginModal: React.FC<PublicLoginModalProps> = ({
   isOpen,
   onClose,
   onLoginSuccess,
-  onOpenAdminPortal,
-  onOpenSupplierPortal,
 }) => {
   const [authMethod, setAuthMethod] = useState<'options' | 'phone_otp' | 'google_verify' | 'apple_verify'>('options');
   const [phone, setPhone] = useState('9876543210');

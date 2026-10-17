@@ -14,6 +14,7 @@ import {
 import { TrainSchedule } from '../types';
 import { BRAND_IMAGES } from '../assets/imagePaths';
 import { LanguageCode, translations } from '../services/localization';
+import { showToast } from './Toast';
 
 interface TrainBookingViewProps {
   trains: TrainSchedule[];
@@ -41,7 +42,7 @@ export const TrainBookingView: React.FC<TrainBookingViewProps> = ({
   const handlePnrSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (pnrInput.length < 6) {
-      alert('Please enter a valid 10-digit Indian Railways PNR number.');
+      showToast('Please enter a valid 10-digit Indian Railways PNR number.', 'warning');
       return;
     }
     setIsSearchingPnr(true);
