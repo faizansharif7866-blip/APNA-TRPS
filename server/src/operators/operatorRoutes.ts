@@ -1,7 +1,7 @@
 import { Router, Response } from 'express';
 import { db } from '../database/db.js';
 import { AuthenticatedRequest, requireOperator } from '../auth/authMiddleware.js';
-import { validateBusLayout } from '../services/busLayoutValidator.js';
+import { validateBusLayout } from '../../../src/services/busLayoutValidator.js';
 import { BusFleetConfiguration, BusTrip, Seat } from '../../../packages/shared-types/index.js';
 
 const router = Router();
@@ -28,7 +28,7 @@ router.get('/dashboard', (req: AuthenticatedRequest, res: Response) => {
 
   const grossEarnings = myBookings
     .filter((b) => b.bookingStatus === 'CONFIRMED')
-    .reduce((sum, b) => sum + b.totalFare, 0);
+    .reduce((sum, b) => sum + (b.totalFare || b.financials?.totalPayableAmount || 0), 0);
 
   const commissionDeduction = Math.round(grossEarnings * (operator.commissionPercentage / 100));
   const netSettlement = grossEarnings - commissionDeduction;
@@ -178,6 +178,9 @@ router.post('/buses', (req: AuthenticatedRequest, res: Response) => {
     ],
     tripDate: '2026-10-18',
     fleetConfigId: newBusConfig.id,
+    cancellationPolicy: 'Standard 90% refund up to 12 hours prior to departure.',
+    hasLiveGps: true,
+    seats: passengerSeats,
   };
 
   db.trips.unshift(liveTrip);
@@ -269,7 +272,7 @@ router.get('/settlements', (req: AuthenticatedRequest, res: Response) => {
   const myBookings = db.bookings.filter((b) => b.operatorId === operatorId);
   const grossBookings = myBookings
     .filter((b) => b.bookingStatus === 'CONFIRMED')
-    .reduce((sum, b) => sum + b.totalFare, 0);
+    .reduce((sum, b) => sum + (b.totalFare || b.financials?.totalPayableAmount || 0), 0);
 
   const platformCommissions = Math.round(grossBookings * (operator.commissionPercentage / 100));
   const refundDeductions = db.refunds

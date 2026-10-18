@@ -1,0 +1,45 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Public customer profile synced upon Phone or Google login",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "Unique user identifier from Firebase Auth" },
+        "name": { "type": "string", "description": "User display name" },
+        "email": { "type": "string", "description": "User email address" },
+        "phoneNumber": { "type": "string", "description": "User phone number with country code" },
+        "photoURL": { "type": "string", "description": "Avatar photo URL" },
+        "authProvider": { "type": "string", "description": "Authentication provider: phone, google, or email" },
+        "createdAt": { "type": "string", "description": "ISO timestamp of user registration" },
+        "lastLoginAt": { "type": "string", "description": "ISO timestamp of last sign in" }
+      },
+      "required": ["uid"]
+    },
+    "UserBooking": {
+      "title": "UserBooking",
+      "description": "User bus booking record",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "pnrNumber": { "type": "string" },
+        "tripTitle": { "type": "string" },
+        "totalFare": { "type": "number" },
+        "bookingStatus": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "userId", "pnrNumber"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "Collection of registered public users and travelers"
+    },
+    "/users/{userId}/bookings/{bookingId}": {
+      "schema": "UserBooking",
+      "description": "User private bookings and tickets"
+    }
+  }
+}

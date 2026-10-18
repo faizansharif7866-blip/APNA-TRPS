@@ -4,9 +4,10 @@ import { AnimatedBus } from './AnimatedBus';
 
 interface SplashScreenProps {
   onFinish: () => void;
+  onOpenLogin?: () => void;
 }
 
-export const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
+export const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish, onOpenLogin }) => {
   const [progress, setProgress] = useState(0);
   const [secondsRemaining, setSecondsRemaining] = useState(3);
 
@@ -107,7 +108,7 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
         </p>
 
         {/* 3-Second Loading Progress Bar */}
-        <div className="w-64 mt-8 flex flex-col items-center gap-2">
+        <div className="w-64 mt-6 flex flex-col items-center gap-2">
           <div className="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden border border-slate-700/60">
             <div 
               className="h-full bg-gradient-to-r from-amber-500 via-amber-400 to-amber-300 transition-all duration-75 ease-out rounded-full shadow-[0_0_12px_rgba(245,158,11,0.6)]"
@@ -115,9 +116,34 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
             />
           </div>
           <div className="flex items-center justify-between w-full text-[11px] text-slate-400 font-mono">
-            <span>Initializing Engine...</span>
+            <span>Connecting verified fleets...</span>
             <span className="text-amber-400 font-bold">{Math.min(100, Math.round(progress))}%</span>
           </div>
+        </div>
+
+        {/* Quick actions directly from Splash Screen */}
+        <div className="flex items-center gap-2 mt-5">
+          {onOpenLogin && (
+            <button
+              type="button"
+              onClick={() => {
+                onFinish();
+                onOpenLogin();
+              }}
+              className="px-4 py-2 bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold text-xs rounded-xl shadow-lg transition-all active:scale-95 flex items-center gap-1.5"
+            >
+              <span>Sign In with Phone / Google</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+          )}
+
+          <button
+            type="button"
+            onClick={onFinish}
+            className="px-3.5 py-2 bg-slate-800/80 hover:bg-slate-800 text-slate-300 hover:text-white font-semibold text-xs rounded-xl border border-slate-700/80 transition-all"
+          >
+            Explore App
+          </button>
         </div>
 
       </div>

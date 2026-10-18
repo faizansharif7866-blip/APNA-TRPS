@@ -765,7 +765,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                                     arrivalTime: b.arrivalTime,
                                     duration: b.duration,
                                     fareStartingFrom: b.fareStartingFrom,
-                                    hasLiveGps: b.hasLiveGps,
+                                    hasLiveGps: !!b.hasLiveGps,
                                   });
                                   setIsBusModalOpen(true);
                                 }}

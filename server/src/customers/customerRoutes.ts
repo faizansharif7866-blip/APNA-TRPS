@@ -141,7 +141,12 @@ router.post('/bookings', (req: Request, res: Response) => {
 
   const newBooking: Booking = {
     id: `bkg-${Date.now()}`,
+    bookingReference: `AT-REF-${Math.floor(10000 + Math.random() * 90000)}`,
     pnrNumber,
+    customerId: `cust-${Date.now()}`,
+    customerName: passengerName || 'Valued Traveler',
+    customerEmail: passengerEmail || 'traveler@apnatrips.com',
+    customerPhone: passengerPhone || '+91 98000 00000',
     category: category || 'bus',
     tripTitle: tripTitle || `${source} to ${destination}`,
     source: source || 'Chennai',
@@ -164,7 +169,34 @@ router.post('/bookings', (req: Request, res: Response) => {
     paymentStatus: 'PAID',
     paymentMethod: paymentMethod || 'UPI (Google Pay / PhonePe)',
     transactionId,
+    tripDetails: {
+      title: tripTitle || `${source} to ${destination}`,
+      source: source || 'Chennai',
+      destination: destination || 'Bengaluru',
+      travelDate: travelDate || '2026-10-18',
+      departureTime: departureTime || '22:30',
+      operatorOrHost: operatorOrHost || 'Sri Sai Travels Private Limited',
+      seatNumbers,
+    },
+    financials: {
+      baseFare: base,
+      gstAmount: tax,
+      platformServiceFee: 0,
+      gatewayProcessingFee: 0,
+      couponDiscount: discount,
+      totalPayableAmount: totalFare,
+      supplierPayableAmount: Math.round(totalFare * 0.90),
+    },
+    paymentDetails: {
+      orderId: `ORD-${pnrNumber}`,
+      paymentId: transactionId,
+      method: paymentMethod || 'UPI (Google Pay / PhonePe)',
+      verifiedAt: new Date().toISOString(),
+      status: 'PAID',
+    },
+    status: 'CONFIRMED',
     createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   };
 
   db.bookings.unshift(newBooking);
@@ -238,8 +270,9 @@ router.post('/bookings/:id/cancel', (req: Request, res: Response) => {
   }
 
   // 90% refund per policy (10% standard platform cancellation fee)
-  const cancellationFee = Math.round(booking.totalFare * 0.10);
-  const refundAmount = booking.totalFare - cancellationFee;
+  const fare = booking.totalFare ?? booking.financials?.totalPayableAmount ?? 0;
+  const cancellationFee = Math.round(fare * 0.10);
+  const refundAmount = fare - cancellationFee;
 
   booking.bookingStatus = 'CANCELLED';
   booking.cancelledAt = new Date().toISOString();
@@ -250,7 +283,7 @@ router.post('/bookings/:id/cancel', (req: Request, res: Response) => {
     id: booking.refundId,
     bookingId: booking.id,
     pnrNumber: booking.pnrNumber,
-    originalAmount: booking.totalFare,
+    originalAmount: fare,
     cancellationFee,
     refundAmount,
     reason: reason || 'Customer self-service cancellation',

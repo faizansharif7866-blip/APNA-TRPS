@@ -901,6 +901,8 @@ export const PartnerApp: React.FC = () => {
               </button>
             </div>
             <BusLayoutBuilder
+              operatorId={currentOperator?.id || 'op-sri-sai'}
+              operatorName={currentOperator?.businessName || 'Sri Sai Travels'}
               onClose={() => setIsBuilderOpen(false)}
               onBusPublished={handleBusPublished}
             />

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   X, 
   Smartphone, 
@@ -9,11 +9,22 @@ import {
   Sparkles,
   PhoneCall,
   User,
-  KeyRound
+  KeyRound,
+  RotateCcw,
+  AlertCircle,
+  Loader2,
+  ChevronLeft
 } from 'lucide-react';
 import { UserProfile } from '../types';
 import { setCurrentUser } from '../services/storage';
 import { AnimatedBus } from './AnimatedBus';
+import { 
+  signInWithGoogle, 
+  setupRecaptcha, 
+  sendPhoneOtp, 
+  verifyPhoneOtp 
+} from '../services/firebase';
+import type { ConfirmationResult, RecaptchaVerifier } from 'firebase/auth';
 
 interface PublicLoginModalProps {
   currentUser: UserProfile;
@@ -28,86 +39,305 @@ export const PublicLoginModal: React.FC<PublicLoginModalProps> = ({
   onClose,
   onLoginSuccess,
 }) => {
-  const [authMethod, setAuthMethod] = useState<'options' | 'phone_otp' | 'google_verify' | 'apple_verify'>('options');
-  const [phone, setPhone] = useState('9876543210');
-  const [userName, setUserName] = useState('Ananya Sharma');
-  const [userEmail, setUserEmail] = useState('ananya.sharma@gmail.com');
-  const [otpCode, setOtpCode] = useState('4829');
-  const [isVerifying, setIsVerifying] = useState(false);
-  const [verifiedProvider, setVerifiedProvider] = useState<string | null>(null);
+  // Navigation views: 'options' | 'phone_input' | 'otp_verify'
+  const [view, setView] = useState<'options' | 'phone_input' | 'otp_verify'>('options');
+  
+  // Phone form state
+  const [countryCode, setCountryCode] = useState('+91');
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [fullName, setFullName] = useState('');
+  
+  // OTP state
+  const [otpDigits, setOtpDigits] = useState<string[]>(['', '', '', '', '', '']);
+  const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
+  const [resendCountdown, setResendCountdown] = useState<number>(30);
+  const [canResend, setCanResend] = useState<boolean>(false);
+  
+  // Status & Error
+  const [loading, setLoading] = useState<boolean>(false);
+  const [statusMessage, setStatusMessage] = useState<string>('');
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  const otpInputRefs = useRef<(HTMLInputElement | null)[]>([]);
+  const recaptchaVerifierRef = useRef<RecaptchaVerifier | null>(null);
+
+  // Reset state when modal is opened/closed
+  useEffect(() => {
+    if (isOpen) {
+      setView('options');
+      setErrorMessage(null);
+      setSuccessMessage(null);
+      setLoading(false);
+      setOtpDigits(['', '', '', '', '', '']);
+    } else {
+      if (recaptchaVerifierRef.current) {
+        try {
+          recaptchaVerifierRef.current.clear();
+        } catch {
+          // ignore
+        }
+        recaptchaVerifierRef.current = null;
+      }
+    }
+  }, [isOpen]);
+
+  // Resend Countdown Timer
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (view === 'otp_verify' && resendCountdown > 0) {
+      setCanResend(false);
+      timer = setInterval(() => {
+        setResendCountdown((prev) => {
+          if (prev <= 1) {
+            setCanResend(true);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+    return () => clearInterval(timer);
+  }, [view, resendCountdown]);
 
   if (!isOpen) return null;
 
-  // Google Sign-In Simulation
-  const handleGoogleSignIn = () => {
-    setAuthMethod('google_verify');
-    setIsVerifying(true);
-    setTimeout(() => {
-      setIsVerifying(false);
-      setVerifiedProvider('Google Account (Google Identity Services)');
-      setTimeout(() => {
-        const user: UserProfile = {
-          id: `usr-google-${Date.now()}`,
-          name: 'Ananya Sharma',
-          email: 'ananya.sharma@gmail.com',
-          phone: '+91 98765 43210',
-          role: 'customer',
-          isVerified: true,
-          authProvider: 'google',
-        };
-        setCurrentUser(user);
-        onLoginSuccess(user);
-        onClose();
-      }, 700);
-    }, 1200);
+  // Initialize reCAPTCHA on container
+  const getOrCreateRecaptcha = (): RecaptchaVerifier => {
+    if (!recaptchaVerifierRef.current) {
+      recaptchaVerifierRef.current = setupRecaptcha('firebase-recaptcha-container');
+    }
+    return recaptchaVerifierRef.current;
   };
 
-  // Apple Sign-In Simulation
-  const handleAppleSignIn = () => {
-    setAuthMethod('apple_verify');
-    setIsVerifying(true);
-    setTimeout(() => {
-      setIsVerifying(false);
-      setVerifiedProvider('Apple ID (Face ID / Passkey Verified)');
+  /**
+   * 1. Real Google Sign-In
+   */
+  const handleGoogleSignIn = async () => {
+    setLoading(true);
+    setErrorMessage(null);
+    setStatusMessage('Connecting with Google Account...');
+
+    try {
+      const { user, profile } = await signInWithGoogle();
+      
+      const appUser: UserProfile = {
+        id: user.uid,
+        name: profile.name || user.displayName || 'Valued Traveler',
+        email: profile.email || user.email || 'traveler@apnatrips.com',
+        phone: profile.phoneNumber || user.phoneNumber || '+91 98000 00000',
+        avatarUrl: profile.photoURL || user.photoURL || undefined,
+        role: 'customer',
+        isVerified: true,
+        authProvider: 'google',
+        createdAt: profile.createdAt,
+      };
+
+      setCurrentUser(appUser);
+      setSuccessMessage(`Welcome, ${appUser.name}!`);
+      
       setTimeout(() => {
-        const user: UserProfile = {
-          id: `usr-apple-${Date.now()}`,
-          name: 'Ananya Sharma',
-          email: 'ananya.sharma@icloud.com',
-          phone: '+91 98765 43210',
-          role: 'customer',
-          isVerified: true,
-          authProvider: 'apple',
-        };
-        setCurrentUser(user);
-        onLoginSuccess(user);
+        onLoginSuccess(appUser);
         onClose();
-      }, 700);
-    }, 1200);
+      }, 800);
+    } catch (err: any) {
+      console.error('Google Sign-In Failed:', err);
+      if (err?.code === 'auth/popup-closed-by-user') {
+        setErrorMessage('Sign-in cancelled. The Google popup was closed before completion.');
+      } else if (err?.code === 'auth/cancelled-popup-request') {
+        setErrorMessage('Previous login attempt was cancelled.');
+      } else if (err?.code === 'auth/network-request-failed') {
+        setErrorMessage('Network connection error. Please verify your internet connection.');
+      } else {
+        setErrorMessage(err?.message || 'Google Sign-In failed. Please try again.');
+      }
+    } finally {
+      setLoading(false);
+      setStatusMessage('');
+    }
   };
 
-  // Phone OTP Verification
-  const handlePhoneOtpSubmit = (e: React.FormEvent) => {
+  /**
+   * 2. Send Phone OTP
+   */
+  const handleSendPhoneOtp = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsVerifying(true);
-    setTimeout(() => {
-      setIsVerifying(false);
-      const user: UserProfile = {
-        id: `usr-phone-${Date.now()}`,
-        name: userName || 'Ananya Sharma',
-        email: userEmail || 'ananya.travels@example.com',
-        phone: `+91 ${phone}`,
+    const cleanPhone = phoneNumber.replace(/\D/g, '');
+
+    if (!cleanPhone || cleanPhone.length < 10) {
+      setErrorMessage('Please enter a valid 10-digit mobile number.');
+      return;
+    }
+
+    setLoading(true);
+    setErrorMessage(null);
+    setStatusMessage('Sending 6-digit OTP via carrier SMS...');
+
+    try {
+      const verifier = getOrCreateRecaptcha();
+      const fullNumber = `${countryCode}${cleanPhone}`;
+      const confirmation = await sendPhoneOtp(fullNumber, verifier);
+      
+      setConfirmationResult(confirmation);
+      setView('otp_verify');
+      setResendCountdown(30);
+      setCanResend(false);
+      setOtpDigits(['', '', '', '', '', '']);
+      
+      // Auto-focus first digit input
+      setTimeout(() => {
+        otpInputRefs.current[0]?.focus();
+      }, 200);
+    } catch (err: any) {
+      console.error('Send OTP Failed:', err);
+      // Reset reCAPTCHA verifier on failure so user can retry cleanly
+      recaptchaVerifierRef.current = null;
+
+      if (err?.code === 'auth/invalid-phone-number') {
+        setErrorMessage('Invalid phone number format. Please check the country code and number.');
+      } else if (err?.code === 'auth/too-many-requests') {
+        setErrorMessage('Too many OTP requests from this device. Please wait a few minutes or sign in with Google.');
+      } else if (err?.code === 'auth/quota-exceeded') {
+        setErrorMessage('SMS quota exceeded for test project. Please use Google Sign-In.');
+      } else {
+        setErrorMessage(err?.message || 'Failed to send SMS OTP. Please check your number.');
+      }
+    } finally {
+      setLoading(false);
+      setStatusMessage('');
+    }
+  };
+
+  /**
+   * 3. Resend OTP
+   */
+  const handleResendOtp = async () => {
+    if (!canResend || loading) return;
+    const cleanPhone = phoneNumber.replace(/\D/g, '');
+    const fullNumber = `${countryCode}${cleanPhone}`;
+
+    setLoading(true);
+    setErrorMessage(null);
+    setStatusMessage('Resending new SMS OTP...');
+
+    try {
+      const verifier = getOrCreateRecaptcha();
+      const confirmation = await sendPhoneOtp(fullNumber, verifier);
+      setConfirmationResult(confirmation);
+      setResendCountdown(30);
+      setCanResend(false);
+      setOtpDigits(['', '', '', '', '', '']);
+      setStatusMessage('New OTP sent successfully!');
+      setTimeout(() => setStatusMessage(''), 2500);
+    } catch (err: any) {
+      console.error('Resend OTP error:', err);
+      recaptchaVerifierRef.current = null;
+      setErrorMessage(err?.message || 'Failed to resend OTP.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /**
+   * 4. Handle OTP Digit Input & Paste
+   */
+  const handleOtpChange = (index: number, val: string) => {
+    if (val.length > 1) {
+      // User pasted full code
+      const pasted = val.replace(/\D/g, '').slice(0, 6);
+      if (pasted) {
+        const newDigits = [...otpDigits];
+        for (let i = 0; i < 6; i++) {
+          newDigits[i] = pasted[i] || '';
+        }
+        setOtpDigits(newDigits);
+        const focusIndex = Math.min(pasted.length, 5);
+        otpInputRefs.current[focusIndex]?.focus();
+      }
+      return;
+    }
+
+    const digit = val.replace(/\D/g, '');
+    const newDigits = [...otpDigits];
+    newDigits[index] = digit;
+    setOtpDigits(newDigits);
+
+    // Auto-advance
+    if (digit && index < 5) {
+      otpInputRefs.current[index + 1]?.focus();
+    }
+  };
+
+  const handleOtpKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Backspace' && !otpDigits[index] && index > 0) {
+      otpInputRefs.current[index - 1]?.focus();
+    }
+  };
+
+  /**
+   * 5. Verify Phone OTP
+   */
+  const handleVerifyOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const fullCode = otpDigits.join('');
+
+    if (fullCode.length !== 6) {
+      setErrorMessage('Please enter the full 6-digit OTP code sent to your phone.');
+      return;
+    }
+
+    if (!confirmationResult) {
+      setErrorMessage('Verification session expired. Please request a new OTP.');
+      setView('phone_input');
+      return;
+    }
+
+    setLoading(true);
+    setErrorMessage(null);
+    setStatusMessage('Verifying OTP with secure authentication server...');
+
+    try {
+      const { user, profile } = await verifyPhoneOtp(confirmationResult, fullCode);
+
+      const cleanPhone = phoneNumber.replace(/\D/g, '');
+      const displayName = fullName.trim() || profile.name || `Traveler ${cleanPhone.slice(-4)}`;
+
+      const appUser: UserProfile = {
+        id: user.uid,
+        name: displayName,
+        email: profile.email || `${cleanPhone}@apnatrips.com`,
+        phone: user.phoneNumber || `${countryCode} ${cleanPhone}`,
         role: 'customer',
         isVerified: true,
         authProvider: 'phone',
+        createdAt: profile.createdAt,
       };
-      setCurrentUser(user);
-      onLoginSuccess(user);
-      onClose();
-    }, 900);
+
+      setCurrentUser(appUser);
+      setSuccessMessage(`Phone verified! Welcome ${appUser.name}`);
+
+      setTimeout(() => {
+        onLoginSuccess(appUser);
+        onClose();
+      }, 800);
+    } catch (err: any) {
+      console.error('Verify OTP Failed:', err);
+      if (err?.code === 'auth/invalid-verification-code') {
+        setErrorMessage('Incorrect OTP code. Please check the SMS and re-enter.');
+      } else if (err?.code === 'auth/code-expired') {
+        setErrorMessage('This OTP code has expired. Please click Resend OTP.');
+      } else {
+        setErrorMessage(err?.message || 'OTP verification failed. Please check the code.');
+      }
+    } finally {
+      setLoading(false);
+      setStatusMessage('');
+    }
   };
 
-  // Continue as Guest
+  /**
+   * 6. Guest Bypass
+   */
   const handleGuestContinue = () => {
     const guestUser: UserProfile = {
       id: `guest-${Date.now()}`,
@@ -125,27 +355,37 @@ export const PublicLoginModal: React.FC<PublicLoginModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/80 backdrop-blur-md overflow-y-auto animate-in fade-in duration-200">
-      <div className="bg-white rounded-2xl max-w-md w-full border border-slate-200 shadow-2xl overflow-hidden my-6">
+      
+      {/* Invisible reCAPTCHA container required by Firebase Phone Auth */}
+      <div id="firebase-recaptcha-container"></div>
+
+      <div className="bg-white rounded-3xl max-w-md w-full border border-slate-200 shadow-2xl overflow-hidden my-6 relative">
         
         {/* Top Header */}
-        <div className="p-4 sm:p-5 bg-slate-900 text-white flex items-center justify-between border-b border-slate-800">
+        <div className="p-5 sm:p-6 bg-slate-950 text-white flex items-center justify-between border-b border-slate-800">
           <div className="flex items-center gap-3">
-            <div className="bg-slate-950 rounded-xl p-1 border border-amber-500/30 flex items-center justify-center shrink-0">
+            <div className="bg-slate-900 rounded-2xl p-1.5 border border-amber-500/30 flex items-center justify-center shrink-0">
               <AnimatedBus size="sm" showRoad={false} />
             </div>
             <div>
-              <h3 className="text-base font-bold text-white font-display flex items-center gap-1.5">
-                <span>Welcome to ApnaTrips</span>
-              </h3>
-              <p className="text-xs text-amber-400 font-semibold mt-0.5">
-                Sign in to book tickets, unlock wallet cash & track fleets
+              <div className="flex items-center gap-1.5">
+                <span className="text-lg font-black text-white tracking-tight">Apna</span>
+                <span className="text-lg font-black text-amber-400 tracking-tight">Trips</span>
+                <span className="text-[10px] bg-amber-400/20 text-amber-400 px-2 py-0.5 rounded-full font-bold ml-1">
+                  Traveler Login
+                </span>
+              </div>
+              <p className="text-xs text-slate-300 font-medium mt-0.5">
+                {view === 'otp_verify' ? 'Enter 6-digit verification code' : 'Sign in to access your tickets, wallet & live GPS'}
               </p>
             </div>
           </div>
 
           <button
+            type="button"
             onClick={onClose}
-            className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
+            className="p-2 text-slate-400 hover:text-white rounded-xl hover:bg-slate-800 transition-colors"
+            title="Close"
           >
             <X className="w-5 h-5" />
           </button>
@@ -153,19 +393,41 @@ export const PublicLoginModal: React.FC<PublicLoginModalProps> = ({
 
         {/* Content Body */}
         <div className="p-5 sm:p-6 space-y-4">
-          
-          {/* Main Options View */}
-          {authMethod === 'options' && (
-            <div className="space-y-3.5">
+
+          {/* Feedback messages */}
+          {errorMessage && (
+            <div className="p-3 bg-rose-50 border border-rose-200 rounded-2xl flex items-start gap-2.5 text-xs text-rose-800 animate-in fade-in">
+              <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+              <div className="flex-1 font-medium">{errorMessage}</div>
+            </div>
+          )}
+
+          {statusMessage && (
+            <div className="p-3 bg-amber-50 border border-amber-200 rounded-2xl flex items-center gap-2.5 text-xs text-amber-900 animate-in fade-in">
+              <Loader2 className="w-4 h-4 text-amber-600 animate-spin shrink-0" />
+              <div className="font-medium">{statusMessage}</div>
+            </div>
+          )}
+
+          {successMessage && (
+            <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-2xl flex items-center gap-2.5 text-xs text-emerald-800 animate-in fade-in">
+              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+              <div className="font-semibold">{successMessage}</div>
+            </div>
+          )}
+
+          {/* VIEW 1: Main Options (Google or Phone) */}
+          {view === 'options' && (
+            <div className="space-y-4">
               
-              {/* Google Sign In Button */}
+              {/* Google Sign-In Button */}
               <button
                 type="button"
                 onClick={handleGoogleSignIn}
-                className="w-full py-2.5 px-4 bg-white hover:bg-slate-50 text-slate-800 font-semibold text-xs sm:text-sm rounded-xl border border-slate-300 shadow-sm transition-all flex items-center justify-center gap-3 hover:border-slate-400 group"
+                disabled={loading}
+                className="w-full py-3 px-4 bg-white hover:bg-slate-50 text-slate-800 font-bold text-xs sm:text-sm rounded-2xl border border-slate-300 shadow-sm transition-all flex items-center justify-center gap-3 hover:border-slate-400 active:scale-[0.99] disabled:opacity-60"
               >
-                {/* Official Google G Logo */}
-                <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
+                <svg className="w-5 h-5 shrink-0" viewBox="0 0 24 24">
                   <path
                     fill="#4285F4"
                     d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -186,38 +448,49 @@ export const PublicLoginModal: React.FC<PublicLoginModalProps> = ({
                 <span>Continue with Google</span>
               </button>
 
-              {/* Apple Sign In Button */}
-              <button
-                type="button"
-                onClick={handleAppleSignIn}
-                className="w-full py-2.5 px-4 bg-black hover:bg-slate-900 text-white font-semibold text-xs sm:text-sm rounded-xl border border-black shadow-sm transition-all flex items-center justify-center gap-3 group"
-              >
-                {/* Official Apple Logo */}
-                <svg className="w-4 h-4 fill-current shrink-0" viewBox="0 0 170 170">
-                  <path d="M150.37 130.25c-2.45 5.66-5.35 10.87-8.71 15.66-4.58 6.53-8.33 11.05-11.22 13.56-4.48 4.12-9.28 6.23-14.42 6.35-3.69 0-8.14-1.05-13.32-3.18-5.19-2.12-9.97-3.17-14.34-3.17-4.58 0-9.49 1.05-14.75 3.17-5.26 2.13-9.5 3.24-12.74 3.35-4.35.13-9.16-1.9-14.42-6.08-3.7-3.04-7.6-7.7-11.72-13.97-6.53-9.9-11.45-20.9-14.75-32.99-3.3-12.08-4.95-23.75-4.95-35 0-14.79 3.73-27.18 11.2-37.16 7.47-9.98 17.07-15.09 28.8-15.34 4.58 0 9.8 1.18 15.65 3.53 5.86 2.36 9.87 3.59 12.04 3.69 1.8 0 5.87-1.3 12.21-3.9 6.34-2.6 11.77-3.77 16.29-3.52 13.92.74 24.62 5.76 32.1 15.06-11.53 7.02-17.18 16.54-16.94 28.56.24 10.02 4.09 18.25 11.56 24.69 7.47 6.44 16.28 10.05 26.43 10.83-2.09 6.32-4.58 12.44-7.47 18.37zm-29.4-106.18c0-7.39 2.65-14.4 7.95-21.03 5.3-6.63 11.93-11.02 19.89-13.17.65 2.18.98 4.35.98 6.52 0 7.39-2.73 14.51-8.19 21.36-5.46 6.85-12.15 11.16-20.08 12.93-.16-2.17-.55-4.37-.55-6.61z" />
-                </svg>
-                <span>Continue with Apple</span>
-              </button>
-
               {/* Divider */}
               <div className="relative my-4 flex items-center justify-center">
                 <div className="border-t border-slate-200 w-full" />
-                <span className="bg-white px-3 text-[11px] text-slate-400 font-medium uppercase tracking-wider relative">
-                  or sign in with mobile
+                <span className="bg-white px-3 text-[11px] text-slate-400 font-semibold uppercase tracking-wider relative">
+                  or sign in with mobile OTP
                 </span>
               </div>
 
               {/* Phone OTP Login Option */}
               <button
                 type="button"
-                onClick={() => setAuthMethod('phone_otp')}
-                className="w-full py-2.5 px-4 bg-slate-900 hover:bg-slate-800 text-amber-400 font-semibold text-xs sm:text-sm rounded-xl transition-colors flex items-center justify-center gap-2 shadow-sm"
+                onClick={() => setView('phone_input')}
+                disabled={loading}
+                className="w-full py-3 px-4 bg-slate-950 hover:bg-slate-900 text-amber-400 font-bold text-xs sm:text-sm rounded-2xl transition-all flex items-center justify-center gap-2.5 shadow-md active:scale-[0.99]"
               >
                 <Smartphone className="w-4 h-4 text-amber-400" />
-                <span>Sign In with Phone Number (+91 OTP)</span>
+                <span>Verify Phone Number via SMS OTP</span>
+                <ArrowRight className="w-4 h-4 ml-1" />
               </button>
 
-              {/* Explore as Guest Option */}
+              {/* RedBus-Style Benefits Card */}
+              <div className="p-4 bg-amber-50/70 border border-amber-200/80 rounded-2xl text-xs text-amber-950 space-y-2 mt-4">
+                <div className="font-extrabold flex items-center gap-1.5 text-amber-900">
+                  <Sparkles className="w-4 h-4 text-amber-600" />
+                  <span>Real Traveler Privileges:</span>
+                </div>
+                <div className="grid grid-cols-1 gap-1 text-[11px] text-amber-800">
+                  <div className="flex items-center gap-1.5">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                    <span>Real-time WhatsApp & SMS E-Ticket confirmation</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                    <span>Live GPS bus tracker with pinpoint boarding location</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                    <span>Save co-passengers for lightning-fast 1-click booking</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Skip for Guest */}
               <div className="pt-2 text-center">
                 <button
                   type="button"
@@ -228,149 +501,200 @@ export const PublicLoginModal: React.FC<PublicLoginModalProps> = ({
                 </button>
               </div>
 
-              {/* RedBus-Style Benefits Banner */}
-              <div className="mt-4 p-3.5 bg-amber-50/70 border border-amber-200/80 rounded-xl text-xs text-amber-950 space-y-1">
-                <div className="font-bold flex items-center gap-1.5 text-amber-900">
-                  <Sparkles className="w-4 h-4 text-amber-600" />
-                  <span>Member Privileges on ApnaTrips:</span>
-                </div>
-                <ul className="text-[11px] text-amber-800 space-y-0.5 list-disc list-inside">
-                  <li>₹450 Welcome Travel Cash in your wallet</li>
-                  <li>Instant WhatsApp ticket delivery & live GPS updates</li>
-                  <li>Manage co-passengers for 1-click booking</li>
-                </ul>
-              </div>
-
             </div>
           )}
 
-          {/* Google Verification Animation */}
-          {authMethod === 'google_verify' && (
-            <div className="py-8 text-center space-y-4 animate-in fade-in">
-              <div className="w-14 h-14 bg-blue-50 border border-blue-200 rounded-full flex items-center justify-center mx-auto">
-                {isVerifying ? (
-                  <div className="w-6 h-6 border-3 border-blue-600 border-t-transparent rounded-full animate-spin" />
-                ) : (
-                  <CheckCircle2 className="w-8 h-8 text-emerald-600" />
-                )}
-              </div>
-              <h4 className="text-base font-bold text-slate-900">
-                {isVerifying ? 'Connecting to Google Accounts...' : 'Google Account Verified!'}
-              </h4>
-              <p className="text-xs text-slate-500 font-mono">
-                {verifiedProvider || 'Verifying ananya.sharma@gmail.com...'}
-              </p>
-            </div>
-          )}
+          {/* VIEW 2: Phone Number Input Form */}
+          {view === 'phone_input' && (
+            <form onSubmit={handleSendPhoneOtp} className="space-y-4 animate-in fade-in">
+              <button
+                type="button"
+                onClick={() => setView('options')}
+                className="flex items-center gap-1 text-xs text-slate-500 hover:text-slate-900 font-semibold mb-2"
+              >
+                <ChevronLeft className="w-4 h-4" />
+                <span>Back to login options</span>
+              </button>
 
-          {/* Apple ID Verification Animation */}
-          {authMethod === 'apple_verify' && (
-            <div className="py-8 text-center space-y-4 animate-in fade-in">
-              <div className="w-14 h-14 bg-slate-100 border border-slate-300 rounded-full flex items-center justify-center mx-auto">
-                {isVerifying ? (
-                  <div className="w-6 h-6 border-3 border-slate-900 border-t-transparent rounded-full animate-spin" />
-                ) : (
-                  <CheckCircle2 className="w-8 h-8 text-emerald-600" />
-                )}
-              </div>
-              <h4 className="text-base font-bold text-slate-900">
-                {isVerifying ? 'Verifying Apple ID with Passkey...' : 'Apple ID Verified!'}
-              </h4>
-              <p className="text-xs text-slate-500 font-mono">
-                {verifiedProvider || 'Face ID Authenticated'}
-              </p>
-            </div>
-          )}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-700 flex items-center gap-1">
+                  <span>Mobile Number for OTP Verification</span>
+                  <span className="text-rose-500">*</span>
+                </label>
+                
+                <div className="flex items-center gap-2">
+                  {/* Country code selector */}
+                  <select
+                    value={countryCode}
+                    onChange={(e) => setCountryCode(e.target.value)}
+                    className="h-11 px-3 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
+                  >
+                    <option value="+91">🇮🇳 +91 (IN)</option>
+                    <option value="+1">🇺🇸 +1 (US)</option>
+                    <option value="+44">🇬🇧 +44 (UK)</option>
+                    <option value="+971">🇦🇪 +971 (UAE)</option>
+                    <option value="+65">🇸🇬 +65 (SG)</option>
+                  </select>
 
-          {/* Phone Number + OTP Input View */}
-          {authMethod === 'phone_otp' && (
-            <form onSubmit={handlePhoneOtpSubmit} className="space-y-3.5 text-xs">
-              <div>
-                <label className="block text-slate-700 font-semibold mb-1">Full Traveler Name</label>
-                <input
-                  type="text"
-                  value={userName}
-                  onChange={(e) => setUserName(e.target.value)}
-                  className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:bg-white focus:outline-none focus:ring-1 focus:ring-amber-500 font-medium"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-slate-700 font-semibold mb-1">Indian Mobile Number (+91)</label>
-                <div className="flex gap-2">
-                  <div className="px-3 py-2.5 bg-slate-100 border border-slate-300 rounded-lg text-slate-700 font-semibold font-mono">
-                    +91
+                  <div className="relative flex-1">
+                    <input
+                      type="tel"
+                      value={phoneNumber}
+                      onChange={(e) => setPhoneNumber(e.target.value)}
+                      placeholder="Enter 10-digit mobile number"
+                      maxLength={12}
+                      className="w-full h-11 pl-3 pr-10 bg-slate-50 border border-slate-300 rounded-xl text-sm font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 tracking-wide"
+                      autoFocus
+                    />
+                    <Smartphone className="w-4 h-4 text-slate-400 absolute right-3 top-3.5" />
                   </div>
+                </div>
+                <p className="text-[11px] text-slate-500">
+                  A 6-digit SMS verification code will be sent to this number.
+                </p>
+              </div>
+
+              {/* Optional Traveler Name */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-700">
+                  Traveler Name <span className="text-slate-400 font-normal">(Optional)</span>
+                </label>
+                <div className="relative">
                   <input
-                    type="tel"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    maxLength={10}
-                    className="flex-1 p-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:bg-white focus:outline-none focus:ring-1 focus:ring-amber-500 font-mono font-medium"
-                    required
+                    type="text"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    placeholder="Enter your name"
+                    className="w-full h-11 pl-3 pr-10 bg-slate-50 border border-slate-300 rounded-xl text-sm font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
                   />
+                  <User className="w-4 h-4 text-slate-400 absolute right-3 top-3.5" />
                 </div>
               </div>
 
-              <div>
-                <label className="block text-slate-700 font-semibold mb-1">Email for E-Ticket Delivery</label>
-                <input
-                  type="email"
-                  value={userEmail}
-                  onChange={(e) => setUserEmail(e.target.value)}
-                  className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:bg-white focus:outline-none focus:ring-1 focus:ring-amber-500"
-                  required
-                />
-              </div>
+              {/* Send OTP button */}
+              <button
+                type="submit"
+                disabled={loading || !phoneNumber.trim()}
+                className="w-full py-3 px-4 bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold text-sm rounded-2xl shadow-md transition-all flex items-center justify-center gap-2 disabled:opacity-50 active:scale-[0.99]"
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Sending SMS OTP...</span>
+                  </>
+                ) : (
+                  <>
+                    <KeyRound className="w-4 h-4" />
+                    <span>Send SMS OTP</span>
+                  </>
+                )}
+              </button>
 
-              {/* Demo OTP Display */}
-              <div className="p-2.5 bg-emerald-50 border border-emerald-200 rounded-lg text-emerald-900 text-[11px] flex items-center justify-between">
-                <span>Demo SMS OTP sent: <strong>{otpCode}</strong></span>
-                <span className="font-mono text-emerald-700 font-bold">Auto-filled</span>
-              </div>
-
-              <div className="pt-2 flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => setAuthMethod('options')}
-                  className="px-3.5 py-2.5 border border-slate-300 text-slate-700 rounded-xl font-medium"
-                >
-                  Back
-                </button>
-                <button
-                  type="submit"
-                  disabled={isVerifying}
-                  className="flex-1 py-2.5 bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold rounded-xl transition-colors shadow-sm flex items-center justify-center gap-1.5"
-                >
-                  {isVerifying ? (
-                    <div className="w-4 h-4 border-2 border-slate-950 border-t-transparent rounded-full animate-spin" />
-                  ) : (
-                    <>
-                      <span>Verify & Enter ApnaTrips</span>
-                      <ArrowRight className="w-4 h-4" />
-                    </>
-                  )}
-                </button>
+              <div className="text-center pt-1 text-[11px] text-slate-400 flex items-center justify-center gap-1.5">
+                <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Protected by Firebase Enterprise SMS Verification</span>
               </div>
             </form>
           )}
 
-          {/* Public Traveler Trust Badge */}
-          <div className="pt-4 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
-            <span className="flex items-center gap-1 text-slate-600">
-              <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-              <span>Official 256-bit encrypted SSL login</span>
-            </span>
+          {/* VIEW 3: 6-Digit OTP Verification Form */}
+          {view === 'otp_verify' && (
+            <form onSubmit={handleVerifyOtp} className="space-y-4 animate-in fade-in">
+              <div className="flex items-center justify-between">
+                <button
+                  type="button"
+                  onClick={() => setView('phone_input')}
+                  className="flex items-center gap-1 text-xs text-slate-500 hover:text-slate-900 font-semibold"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                  <span>Change number</span>
+                </button>
+                <span className="text-xs font-bold text-slate-700">
+                  {countryCode} {phoneNumber}
+                </span>
+              </div>
 
-            <span className="text-slate-400">
-              ApnaTrips Verified Network
-            </span>
-          </div>
+              <div className="text-center py-1">
+                <p className="text-xs text-slate-600">
+                  Enter the 6-digit code sent to <strong className="text-slate-900">{countryCode} {phoneNumber}</strong>
+                </p>
+              </div>
+
+              {/* 6 Digit Input Boxes */}
+              <div className="flex items-center justify-center gap-2">
+                {otpDigits.map((digit, index) => (
+                  <input
+                    key={index}
+                    ref={(el) => {
+                      otpInputRefs.current[index] = el;
+                    }}
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    maxLength={1}
+                    value={digit}
+                    onChange={(e) => handleOtpChange(index, e.target.value)}
+                    onKeyDown={(e) => handleOtpKeyDown(index, e)}
+                    className="w-11 h-13 text-center text-xl font-bold bg-slate-50 border-2 border-slate-300 rounded-xl focus:border-amber-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/20 text-slate-900 transition-all shadow-inner"
+                  />
+                ))}
+              </div>
+
+              {/* Verify OTP Button */}
+              <button
+                type="submit"
+                disabled={loading || otpDigits.join('').length !== 6}
+                className="w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-sm rounded-2xl shadow-md transition-all flex items-center justify-center gap-2 disabled:opacity-50 active:scale-[0.99]"
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Verifying Code...</span>
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 className="w-4 h-4" />
+                    <span>Verify & Sign In</span>
+                  </>
+                )}
+              </button>
+
+              {/* Resend OTP Timer & Button */}
+              <div className="flex items-center justify-between text-xs pt-1 px-1">
+                <span className="text-slate-500">Didn't receive the SMS?</span>
+                {canResend ? (
+                  <button
+                    type="button"
+                    onClick={handleResendOtp}
+                    disabled={loading}
+                    className="font-bold text-amber-600 hover:text-amber-700 flex items-center gap-1 underline underline-offset-2"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" />
+                    <span>Resend OTP</span>
+                  </button>
+                ) : (
+                  <span className="font-semibold text-slate-400">
+                    Resend in <span className="text-amber-600 font-mono font-bold">{resendCountdown}s</span>
+                  </span>
+                )}
+              </div>
+            </form>
+          )}
 
         </div>
 
+        {/* Modal Trust Bar Footer */}
+        <div className="px-5 py-3 bg-slate-50 border-t border-slate-200 text-[11px] text-slate-500 flex items-center justify-between">
+          <div className="flex items-center gap-1.5">
+            <Lock className="w-3.5 h-3.5 text-emerald-600" />
+            <span>256-bit SSL Encrypted Auth</span>
+          </div>
+          <span>ApnaTrips Verified Network</span>
+        </div>
+
       </div>
+
     </div>
   );
 };
+export default PublicLoginModal;

@@ -291,22 +291,23 @@ router.post('/customer/login', (req: Request, res: Response) => {
     });
   }
 
-  let customer = db.customers.find(
+  let customer: UserProfile | undefined = db.customers.find(
     (c) => (email && c.email === email) || (phone && c.phone === phone)
   );
 
   if (!customer) {
-    customer = {
+    const newCustomer: UserProfile = {
       id: `cust-${Date.now()}`,
       name: name || 'Valued Traveler',
       email: email || `traveler${Date.now()}@apnatrips.com`,
       phone: phone || '+91 98000 00000',
       role: 'customer',
       isVerified: true,
-      authProvider: authProvider || 'phone_otp',
+      authProvider: (authProvider as any) || 'phone',
       createdAt: new Date().toISOString(),
     };
-    db.customers.push(customer);
+    db.customers.push(newCustomer);
+    customer = newCustomer;
   }
 
   const token = `cust-token-${Date.now()}-${Math.random().toString(36).substring(2, 10)}`;

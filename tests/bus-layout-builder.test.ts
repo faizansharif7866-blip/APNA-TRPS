@@ -67,7 +67,7 @@ export function validateBusConfiguration(config: Partial<BusFleetConfiguration>)
 
   // Fare validation
   for (const pos of passengerPositions) {
-    if (pos.basePrice <= 0 || isNaN(pos.basePrice)) {
+    if (!pos.basePrice || pos.basePrice <= 0 || isNaN(pos.basePrice)) {
       errors.push(`Invalid fare for seat ${pos.label}: must be greater than 0.`);
       break;
     }

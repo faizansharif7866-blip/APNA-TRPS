@@ -19,6 +19,7 @@ export interface UserProfile {
   assignedTripId?: string;
   avatarUrl?: string;
   authProvider?: 'google' | 'apple' | 'phone' | 'guest';
+  createdAt?: string;
 }
 
 export interface CoPassenger {
@@ -67,8 +68,8 @@ export interface LayoutPosition {
   isWindow?: boolean;
   isAisle?: boolean;
   isLadies?: boolean;
-  basePrice: number;
-  status: 'available' | 'booked' | 'held';
+  basePrice?: number;
+  status?: 'available' | 'booked' | 'held' | 'blocked';
   passengerGender?: 'M' | 'F';
 }
 
@@ -83,13 +84,16 @@ export interface BusFleetConfiguration {
   modelYear?: number;
   category: BusCategoryType;
   deckType: DeckType;
-  totalCapacity: number;
+  totalCapacity?: number;
   amenities: string[];
   positions: LayoutPosition[];
   status: 'draft' | 'approved' | 'published';
-  version: number;
+  version?: number;
   createdAt: string;
   updatedAt: string;
+  rows?: number;
+  cols?: number;
+  safetyCertified?: boolean;
 }
 
 export type PortalMode = 'customer' | 'admin' | 'partner';
@@ -126,8 +130,11 @@ export interface BusTrip {
   operatorName: string;
   busNumber: string;
   busType: string;
+  category?: TravelCategory | BusCategoryType | string;
+  fleetConfigId?: string;
   sourceCity: string;
   destinationCity: string;
+  tripDate?: string;
   departureTime: string;
   arrivalTime: string;
   duration: string;
@@ -139,8 +146,8 @@ export interface BusTrip {
   amenities: string[];
   boardingPoints: { location: string; time: string }[];
   droppingPoints: { location: string; time: string }[];
-  cancellationPolicy: string;
-  hasLiveGps: boolean;
+  cancellationPolicy?: string;
+  hasLiveGps?: boolean;
   gpsTripId?: string;
   seats: Seat[];
 }
@@ -259,6 +266,8 @@ export interface Booking {
     signature?: string;
     method?: string;
     verifiedAt?: string;
+    status?: 'PAID' | 'FAILED' | 'PENDING' | 'REFUNDED';
+    paidAt?: string;
   };
   status: BookingStatus;
   createdAt: string;
@@ -269,6 +278,29 @@ export interface Booking {
     deductionAmount: number;
     processedAt?: string;
   };
+  bookingStatus?: 'CONFIRMED' | 'CANCELLED' | 'PENDING' | 'WAITLISTED' | 'REFUNDED';
+  paymentStatus?: 'PAID' | 'PENDING' | 'FAILED' | 'REFUNDED';
+  operatorId?: string;
+  totalFare?: number;
+  baseFare?: number;
+  taxAmount?: number;
+  discountAmount?: number;
+  couponCode?: string;
+  paymentMethod?: string;
+  transactionId?: string;
+  passengerName?: string;
+  passengerEmail?: string;
+  passengerPhone?: string;
+  source?: string;
+  destination?: string;
+  seatNumbers?: string[];
+  tripTitle?: string;
+  refundId?: string;
+  operatorOrHost?: string;
+  travelDate?: string;
+  departureTime?: string;
+  refundAmount?: number;
+  cancelledAt?: string;
 }
 
 export interface FinancialLedgerEntry {
@@ -318,13 +350,19 @@ export interface GpsTelemetry {
 
 export interface SupportTicket {
   id: string;
-  bookingId: string;
-  customerId: string;
+  bookingId?: string;
+  ticketNumber?: string;
+  customerId?: string;
   customerName: string;
+  customerPhone?: string;
+  customerEmail?: string;
+  pnrNumber?: string;
   subject: string;
-  category: 'cancellation_refund' | 'bus_delay' | 'driver_issue' | 'resort_checkin' | 'payment_query';
-  priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
+  message?: string;
+  assignedTo?: string;
+  category: 'cancellation_refund' | 'bus_delay' | 'driver_issue' | 'resort_checkin' | 'payment_query' | 'boarding_point' | string;
+  priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT' | 'low' | 'medium' | 'high' | 'urgent';
   status: 'OPEN' | 'IN_PROGRESS' | 'RESOLVED' | 'CLOSED';
-  messages: { sender: 'customer' | 'agent'; text: string; timestamp: string }[];
+  messages?: { sender: 'customer' | 'agent'; text: string; timestamp: string }[];
   createdAt: string;
 }

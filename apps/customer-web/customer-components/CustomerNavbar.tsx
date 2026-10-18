@@ -27,6 +27,7 @@ interface CustomerNavbarProps {
   onOpenAuth: () => void;
   onOpenMyBookings: () => void;
   onOpenMyAccount: () => void;
+  onOpenSplash?: () => void;
 }
 
 export const CustomerNavbar: React.FC<CustomerNavbarProps> = ({
@@ -39,6 +40,7 @@ export const CustomerNavbar: React.FC<CustomerNavbarProps> = ({
   onOpenAuth,
   onOpenMyBookings,
   onOpenMyAccount,
+  onOpenSplash,
 }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [langDropdownOpen, setLangDropdownOpen] = useState(false);
@@ -73,7 +75,18 @@ export const CustomerNavbar: React.FC<CustomerNavbarProps> = ({
           </span>
         </div>
 
-        <div className="flex items-center gap-3 text-slate-400">
+        <div className="flex items-center gap-2.5 text-slate-400">
+          {onOpenSplash && (
+            <button
+              type="button"
+              onClick={onOpenSplash}
+              className="text-amber-400 hover:text-amber-300 text-[10px] bg-amber-400/10 hover:bg-amber-400/20 px-2 py-0.5 rounded border border-amber-400/30 transition-colors flex items-center gap-1 font-semibold"
+              title="View Welcome Splash Screen"
+            >
+              <span>✦ Splash</span>
+            </button>
+          )}
+
           <span className="hidden sm:inline text-slate-400 text-[10px] bg-slate-800/80 px-2 py-0.5 rounded border border-slate-700/60">
             India's Leading Travel Network
           </span>
@@ -197,11 +210,23 @@ export const CustomerNavbar: React.FC<CustomerNavbarProps> = ({
           <button
             type="button"
             onClick={currentUser.isVerified ? onOpenMyAccount : onOpenAuth}
-            className="flex items-center gap-2 px-3.5 py-2 text-xs font-semibold rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white transition-all shadow-md hover:shadow-emerald-900/30"
+            className={`flex items-center gap-2 px-3.5 py-2 text-xs font-semibold rounded-xl transition-all shadow-md ${
+              currentUser.isVerified 
+                ? 'bg-slate-900 border border-slate-700 text-slate-100 hover:bg-slate-800' 
+                : 'bg-emerald-600 hover:bg-emerald-500 text-white hover:shadow-emerald-900/30 ring-2 ring-emerald-500/20'
+            }`}
           >
-            <User className="w-4 h-4 shrink-0" />
+            {currentUser.avatarUrl ? (
+              <img 
+                src={currentUser.avatarUrl} 
+                alt={currentUser.name} 
+                className="w-5 h-5 rounded-full object-cover border border-white/30" 
+              />
+            ) : (
+              <User className="w-4 h-4 shrink-0 text-emerald-300" />
+            )}
             <span className="max-w-[120px] truncate hidden sm:inline">
-              {currentUser.isVerified ? currentUser.name.split(' ')[0] : 'Sign In'}
+              {currentUser.isVerified ? currentUser.name.split(' ')[0] : 'Sign In / OTP'}
             </span>
           </button>
 

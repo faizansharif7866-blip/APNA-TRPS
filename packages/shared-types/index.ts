@@ -6,6 +6,14 @@
 
 export * from '../../src/types/index.js';
 
+export interface BookingPassenger {
+  name: string;
+  age: number;
+  gender: 'M' | 'F' | 'O';
+  seatNumber?: string;
+  berthPreference?: string;
+}
+
 export type AdminRole = 'super_admin' | 'operations_manager' | 'customer_support' | 'finance_manager';
 
 export type OperatorKycStatus = 'PENDING_VERIFICATION' | 'APPROVED' | 'REJECTED' | 'SUSPENDED';

@@ -18,7 +18,7 @@ router.get('/overview', (req: AuthenticatedRequest, res: Response) => {
   const cancelledBookings = db.bookings.filter((b) => b.bookingStatus === 'CANCELLED');
   const pendingPayments = db.bookings.filter((b) => b.paymentStatus === 'PENDING');
 
-  const totalGrossRevenue = confirmedBookings.reduce((sum, b) => sum + b.totalFare, 0);
+  const totalGrossRevenue = confirmedBookings.reduce((sum, b) => sum + (b.totalFare || b.financials?.totalPayableAmount || 0), 0);
   const totalRefundsIssued = db.refunds.reduce((sum, r) => sum + r.refundAmount, 0);
   const netPlatformRevenue = Math.round(totalGrossRevenue * 0.10); // 10% platform take rate
 
@@ -191,8 +191,9 @@ router.post('/refunds/:bookingId', (req: AuthenticatedRequest, res: Response) =>
   }
 
   // Calculate cancellation & refund (90% refund if cancelled > 12h before)
-  const cancellationFee = Math.round(booking.totalFare * 0.10);
-  const refundAmount = booking.totalFare - cancellationFee;
+  const fare = booking.totalFare ?? booking.financials?.totalPayableAmount ?? 0;
+  const cancellationFee = Math.round(fare * 0.10);
+  const refundAmount = fare - cancellationFee;
 
   booking.bookingStatus = 'REFUNDED';
   booking.paymentStatus = 'REFUNDED';
@@ -203,7 +204,7 @@ router.post('/refunds/:bookingId', (req: AuthenticatedRequest, res: Response) =>
     id: booking.refundId,
     bookingId: booking.id,
     pnrNumber: booking.pnrNumber,
-    originalAmount: booking.totalFare,
+    originalAmount: fare,
     cancellationFee,
     refundAmount,
     reason: reason || 'Customer requested cancellation per refund policy',

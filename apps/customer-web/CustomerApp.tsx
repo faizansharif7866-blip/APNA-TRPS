@@ -41,11 +41,16 @@ import { PublicLoginModal } from '../../src/components/PublicLoginModal.js';
 import { RedBusAccountModal } from '../../src/components/RedBusAccountModal.js';
 import { SplashScreen } from '../../src/components/SplashScreen.js';
 import { ToastContainer, showToast } from '../../src/components/Toast.js';
+import { subscribeToAuthState, signOutUser, testFirestoreConnection } from '../../src/services/firebase.js';
 
 export const CustomerApp: React.FC = () => {
-  const [showSplash, setShowSplash] = useState(false);
-  const [showPublicLogin, setShowPublicLogin] = useState(false);
-  const [showUserSettings, setShowUserSettings] = useState(false);
+  // Splash screen shown on first visit in session
+  const [showSplash, setShowSplash] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    return sessionStorage.getItem('apnatrips_splash_shown') !== 'true';
+  });
+  const [showPublicLogin, setShowPublicLogin] = useState<boolean>(false);
+  const [showUserSettings, setShowUserSettings] = useState<boolean>(false);
 
   const [activeCategory, setActiveCategory] = useState<TravelCategory>('bus');
   const [currentLang, setCurrentLang] = useState<LanguageCode>('en');
@@ -53,6 +58,35 @@ export const CustomerApp: React.FC = () => {
   const [bookings, setBookings] = useState<Booking[]>(getStoredBookings());
   const [busTrips, setBusTrips] = useState<BusTrip[]>(getStoredBusTrips());
   const [resorts, setResorts] = useState<ResortProperty[]>(getStoredResorts());
+
+  // Subscribe to real Firebase authentication state & test Firestore connection
+  useEffect(() => {
+    testFirestoreConnection();
+
+    const unsubscribe = subscribeToAuthState((firebaseUser, profile) => {
+      if (firebaseUser && profile) {
+        const appUser: UserProfile = {
+          id: firebaseUser.uid,
+          name: profile.name || firebaseUser.displayName || 'Valued Traveler',
+          email: profile.email || firebaseUser.email || 'traveler@apnatrips.com',
+          phone: profile.phoneNumber || firebaseUser.phoneNumber || '+91 98000 00000',
+          avatarUrl: profile.photoURL || firebaseUser.photoURL || undefined,
+          role: 'customer',
+          isVerified: true,
+          authProvider: profile.authProvider,
+          createdAt: profile.createdAt,
+        };
+        setCurrentUser(appUser);
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  const handleSplashFinish = () => {
+    sessionStorage.setItem('apnatrips_splash_shown', 'true');
+    setShowSplash(false);
+  };
 
   // Modal display states
   const [isMyBookingsOpen, setIsMyBookingsOpen] = useState(false);
@@ -212,7 +246,12 @@ export const CustomerApp: React.FC = () => {
     }, 100);
   };
 
-  const handleLogOut = () => {
+  const handleLogOut = async () => {
+    try {
+      await signOutUser();
+    } catch {
+      // ignore
+    }
     const guestUser: UserProfile = {
       id: `guest-${Date.now()}`,
       name: 'Guest Traveler',
@@ -243,6 +282,7 @@ export const CustomerApp: React.FC = () => {
         onOpenAuth={() => setShowPublicLogin(true)}
         onOpenMyBookings={() => setIsMyBookingsOpen(true)}
         onOpenMyAccount={() => setShowUserSettings(true)}
+        onOpenSplash={() => setShowSplash(true)}
       />
 
       {/* Hero Banner with Multi-Category Search Form */}
@@ -378,7 +418,10 @@ export const CustomerApp: React.FC = () => {
 
       {/* Splash Screen */}
       {showSplash && (
-        <SplashScreen onFinish={() => setShowSplash(false)} />
+        <SplashScreen 
+          onFinish={handleSplashFinish} 
+          onOpenLogin={() => setShowPublicLogin(true)}
+        />
       )}
     </div>
   );

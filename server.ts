@@ -1,4 +1,4 @@
-import express, { Request, Response } from 'express';
+import express, { type Request, type Response } from 'express';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
@@ -6,16 +6,17 @@ import authRoutes from './server/src/auth/authRoutes.js';
 import adminRoutes from './server/src/administrators/adminRoutes.js';
 import operatorRoutes from './server/src/operators/operatorRoutes.js';
 import customerRoutes from './server/src/customers/customerRoutes.js';
-import { validateBusLayout, BusLayoutValidationReport } from './src/services/busLayoutValidator.js';
-import { BusFleetConfiguration } from './packages/shared-types/index.js';
+import { validateBusLayout, type BusLayoutValidationReport } from './src/services/busLayoutValidator.js';
+import type { BusFleetConfiguration } from './packages/shared-types/index.js';
 import { db } from './server/src/database/db.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
-const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
 const isProduction = process.env.NODE_ENV === 'production';
+// In dev, always bind to port 3000 per environment constraints; in production, use process.env.PORT
+const PORT = isProduction && process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
 
 app.use(express.json({ limit: '10mb' }));
 
